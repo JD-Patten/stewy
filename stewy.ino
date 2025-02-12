@@ -67,6 +67,7 @@ void setup() {
 
   // start the controller
   controller.begin(Pose(0, 0, 100, 0, 0, 0));
+  controller.setGoalPose(Pose(0, 0, 130, 0, 0, 0));
 }
 
 void loop() {

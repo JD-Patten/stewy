@@ -54,7 +54,6 @@ void Controller::publishToServos(const vector<float>& angles) {
         
         _servos[i].write(publishAngle + 90);
     }
-    delay(10);
 }
 
 void Controller::calculatePIDControl() {
@@ -75,25 +74,41 @@ void Controller::calculatePIDControl() {
     _currentPose += output;
 }
 
-void Controller::capAcceleration() {
-    unsigned long currentTime = millis();
-    float dt = (currentTime - _previousTime) / 1000.0;  // Convert to seconds
-    _previousTime = currentTime;
+void Controller::follow_trajectory() {
 
-    //temporary just move to goal pose
-    _currentPose = 0.1 * (_goalPose - _currentPose) + _currentPose;
+    // get the current pose on the trajectory
+    Pose currentPose = _trajectory.currentPoseOnTrajectory();
 
+    // update the current pose
+    _currentPose = currentPose;
+}
+
+void Controller::set_trajectory(const Pose& currentPose, const Pose& goalPose) {
+    // creates a trajectory that follows a straight line in the task space
+    // with a 3rd order polynomial for the time scaling
+    // reference Modern Robotics 9.2.1
+
+    float duration = 3.0;  // Fixed declaration
+    _trajectory = Trajectory(currentPose, goalPose, duration);
+
+    Serial.println("Start: " + _trajectory.pointAlongPath(0.0).toString());
+    Serial.println("Mid: " + _trajectory.pointAlongPath(0.5).toString());
+    Serial.println("End: " + _trajectory.pointAlongPath(1.0).toString());
+    Serial.println("--------------------------------");
 }
 
 void Controller::update() {
     // control
-    capAcceleration();
+    if (!_trajectory._isFinished) {
+        follow_trajectory();
 
-    // solve inverse kinematics
-    IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
 
-    if (result.success) {
-        publishToServos(result.angles);
+        // solve inverse kinematics
+        IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
+
+        if (result.success) {
+            publishToServos(result.angles);
+        }
     }
 }
 
@@ -105,6 +120,7 @@ void Controller::setGoalPose(const Pose& goalPose) {
         Serial.println("Goal pose set to: ");
         Serial.println(goalPose.toString());
     }
+    set_trajectory(_currentPose, _goalPose);
 }
 
 void Controller::setOffsets(vector<float> offsets) {
@@ -123,4 +139,66 @@ void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAc
 
 void Controller::setDampingFactor(float dampingFactor) {
     _dampingFactor = dampingFactor;
+}
+
+Trajectory::Trajectory(Pose startPose, Pose goalPose, float duration)
+    : _startPose(startPose)
+    , _goalPose(goalPose)
+    , _duration(duration)
+    , _startTime(millis())
+    , _isFinished(false)
+{
+}
+
+Trajectory::Trajectory(Pose startPose, Pose goalPose, float maxAcceleration, float maxAngularAcceleration)
+    : _startPose(startPose)
+    , _goalPose(goalPose)
+    , _startTime(millis())
+    , _isFinished(false)
+{
+    _duration = minimizeDuration(maxAcceleration, maxAngularAcceleration);
+}
+
+Pose Trajectory::currentPoseOnTrajectory() {
+    // use a 3rd order polynomial for time scaling
+    // reference Modern Robotics 9.2.1
+
+    // calculate the time along the trajectory
+    unsigned long currentTime = millis();
+    float t = (currentTime - _startTime) / 1000.0f;
+
+    if (t > _duration) {
+        _isFinished = true;
+        Serial.println("Trajectory finished");
+    }
+
+    // calculate the path parameter with 3rd order polynomial time scaling
+    float s = (3 * t*t / (_duration * _duration)) - 
+              (2 * t*t*t / (_duration * _duration * _duration));
+
+
+    // Clamp s between 0 and 1
+    s = min(max(s, 0.0f), 1.0f);
+
+    return pointAlongPath(s);
+}
+
+float Trajectory::minimizeDuration(float maxAcceleration, float maxAngularAcceleration) {
+    // minimize the duration of the trajectory
+    // while keeping the max acceleration within the limit
+
+    // For now, just use linear distance for acceleration calculation
+    // TODO: add angular acceleration limit
+    return sqrt(6 * (_goalPose - _startPose).magnitude() / maxAcceleration);
+}
+
+Pose Trajectory::pointAlongPath(float s) {
+    // s is the distance along the path
+    // 0 <= s <= 1
+
+    // Clamp s between 0 and 1
+    s = min(max(s, 0.0f), 1.0f);
+
+    // get the position along the path
+    return _startPose + s * (_goalPose - _startPose);
 }

@@ -127,6 +127,11 @@ struct Pose {
                " pitch: " + String(pitch) + 
                " yaw: " + String(yaw);
     }
+
+    // Function to calculate the magnitude of the position vector
+    float magnitude() const {
+        return sqrt(x * x + y * y + z * z + roll * roll + pitch * pitch + yaw * yaw);
+     }
 };
 
 // Free function for scalar * Pose
