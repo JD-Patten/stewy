@@ -12,9 +12,16 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float kp, float ki, 
     , _maxAngularAcceleration(10.0)     //degrees/s^2
     , _plotCounter(0)
 {
-    // attach servos
+    // Initialize ESP32 PWM
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+
+    // attach servos with proper configuration
     for (int i = 0; i < 6; i++) {
-        _servos[i].attach(servoPins[i]);
+        _servos[i].setPeriodHertz(50);    // Standard 50hz servo
+        _servos[i].attach(servoPins[i], 600, 2400);  // Attach servo with min/max pulse widths
     }
 }
         
@@ -45,9 +52,12 @@ void Controller::publishToServos(const vector<float>& angles) {
     for (int i = 0; i < 6; i++) {
         // For odd servos, check limits on positive value but publish negative
         float checkAngle = (i % 2 == 0) ? -angles[i] : angles[i];
+
+        // Apply offset
+        float offsetAngle = checkAngle + _servoAngleOffsets[i];
         
         // Clamp angle between min and max
-        float constrainedAngle = min(max(checkAngle, _servoAngleMin), _servoAngleMax);
+        float constrainedAngle = min(max(offsetAngle, _servoAngleMin), _servoAngleMax);
         
         // Convert back to publishing direction
         float publishAngle = (i % 2 == 0) ? -constrainedAngle : constrainedAngle;
@@ -88,13 +98,12 @@ void Controller::set_trajectory(const Pose& currentPose, const Pose& goalPose) {
     // with a 3rd order polynomial for the time scaling
     // reference Modern Robotics 9.2.1
 
-    float duration = 3.0;  // Fixed declaration
-    _trajectory = Trajectory(currentPose, goalPose, duration);
+    //float duration = 3.0;  // Fixed declaration
+    _trajectory = Trajectory(currentPose, goalPose, _maxAcceleration, _maxAngularAcceleration);
 
-    Serial.println("Start: " + _trajectory.pointAlongPath(0.0).toString());
-    Serial.println("Mid: " + _trajectory.pointAlongPath(0.5).toString());
-    Serial.println("End: " + _trajectory.pointAlongPath(1.0).toString());
-    Serial.println("--------------------------------");
+    Serial.println("Trajectory created from: " + currentPose.toString());
+    Serial.println("to: " + goalPose.toString());
+    Serial.println("with duration: " + String(_trajectory._duration));
 }
 
 void Controller::update() {
@@ -110,6 +119,9 @@ void Controller::update() {
             publishToServos(result.angles);
         }
     }
+    else {
+        publishToServos(_ikSolver.solveInverseKinematics(_goalPose).angles);
+    }
 }
 
 void Controller::setGoalPose(const Pose& goalPose) {
@@ -117,14 +129,23 @@ void Controller::setGoalPose(const Pose& goalPose) {
     IKResult result = _ikSolver.solveInverseKinematics(goalPose);
     if (result.success){
         _goalPose = goalPose; // update goal pose   
-        Serial.println("Goal pose set to: ");
+        Serial.println("Goal pose set to: "); 
+        Serial.println(goalPose.toString());
+        set_trajectory(_currentPose, _goalPose);
+    }
+    else {
+        Serial.println("Failed to solve inverse kinematics for goal pose: ");
         Serial.println(goalPose.toString());
     }
-    set_trajectory(_currentPose, _goalPose);
+    
 }
 
 void Controller::setOffsets(vector<float> offsets) {
     _servoAngleOffsets = offsets;
+    Serial.println("Servo angle offsets set to: ");
+    for (int i = 0; i < 6; i++) {
+        Serial.println(String(i) + ": " + String(_servoAngleOffsets[i]));
+    }
 }
 
 void Controller::setAngleLimits(float min, float max) {
@@ -135,6 +156,8 @@ void Controller::setAngleLimits(float min, float max) {
 void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration) {
     _maxAcceleration = maxAcceleration;
     _maxAngularAcceleration = maxAngularAcceleration;
+
+    Serial.println("Acceleration limits set to: " + String(maxAcceleration) + " mm/s^2 and " + String(maxAngularAcceleration) + " deg/s^2");
 }
 
 void Controller::setDampingFactor(float dampingFactor) {
@@ -186,10 +209,21 @@ Pose Trajectory::currentPoseOnTrajectory() {
 float Trajectory::minimizeDuration(float maxAcceleration, float maxAngularAcceleration) {
     // minimize the duration of the trajectory
     // while keeping the max acceleration within the limit
+    // reference Modern Robotics 9.2.1 p.330
 
-    // For now, just use linear distance for acceleration calculation
-    // TODO: add angular acceleration limit
-    return sqrt(6 * (_goalPose - _startPose).magnitude() / maxAcceleration);
+
+    float translationalDistance = sqrt(pow(_goalPose.x - _startPose.x, 2) + 
+                                      pow(_goalPose.y - _startPose.y, 2) + 
+                                      pow(_goalPose.z - _startPose.z, 2));
+
+    float angularDistance = sqrt(pow(_goalPose.roll - _startPose.roll, 2) + 
+                                  pow(_goalPose.pitch - _startPose.pitch, 2) + 
+                                  pow(_goalPose.yaw - _startPose.yaw, 2));
+
+    float translationalDuration = sqrt(6 * translationalDistance / maxAcceleration);
+    float angularDuration = sqrt(6 * angularDistance / maxAngularAcceleration);
+
+    return max(translationalDuration, angularDuration);
 }
 
 Pose Trajectory::pointAlongPath(float s) {

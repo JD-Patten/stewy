@@ -11,12 +11,12 @@ class Trajectory {
 private:
     Pose _startPose;
     Pose _goalPose;
-    float _duration;
     unsigned long _startTime;
 
     float minimizeDuration(float maxAcceleration, float maxAngularAcceleration);
 
 public:
+    float _duration;
     bool _isFinished;
     Pose pointAlongPath(float s);
     Trajectory() {}

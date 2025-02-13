@@ -35,11 +35,18 @@ IKSolver ikSolver(
 
 Controller controller(servoPins, ikSolver, 0, 0, 0, 10, 10 );  
 
+// Variable to track the last button pressed
+String lastButtonPressed = "";
+
+bool isProcessingRequest = false;  // Added to handle multiple requests
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   Serial.begin(115200);
+  delay(1000);
+  Serial.println("Starting up...");
+  
   Serial.println();
   Serial.println("Configuring access point...");
 
@@ -71,25 +78,21 @@ void setup() {
 }
 
 void loop() {
-
   controller.update();
 
   WiFiClient client = server.available();   // listen for incoming clients
 
-  if (client) {                             // if you get a client,
-    //Serial.println("New Client.");           // print a message out the serial port
+  if (client) {
     String currentLine = "";                // make a String to hold incoming data from the client
-    while (client.connected()) {            // loop while the client's connected
+    String completeRequest = "";            // String to hold the complete request
+    bool requestComplete = false;           // Flag to indicate if we have a complete request
+    
+    while (client.connected() && !requestComplete) {  // loop while the client's connected
       if (client.available()) {             // if there's bytes to read from the client,
         char c = client.read();             // read a byte, then
-        //Serial.write(c);                    // print it out the serial monitor
         if (c == '\n') {                    // if the byte is a newline character
-
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
+            requestComplete = true;          // Mark request as complete
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
@@ -101,44 +104,160 @@ void loop() {
             client.print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             client.print("<style>");
             client.print("body { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; font-size: 24px; text-align: center; }");
-            client.print("button { padding: 20px; margin: 10px; background:rgb(20, 142, 91); color: white; border: none; border-radius: 10px; font-size: 24px; cursor: pointer; }");
-            client.print("button:hover { background:rgb(11, 107, 78); }");
+            client.print("button { padding: 20px; margin: 10px; background:rgb(0, 207, 135); color: white; border: none; border-radius: 10px; font-size: 24px; cursor: pointer; }");
+            client.print("button:hover { background:rgb(0, 90, 63); }");
+            client.print("input { width: 50px; margin: 5px; }");
             client.print("</style>");
             client.print("<script>");
-            client.print("function sendRequest(command) {");
-            client.print("  fetch(command);");  // Send GET request without reloading the page
+            client.print("function sendRequest(command, inputs) {");
+            client.print("  const params = Array.from(inputs).map(input => input.value).join(',');");
+            client.print("  fetch(`${command}?params=${params}`);");  // Send GET request with parameters
             client.print("}");
             client.print("</script>");
             client.print("</head>");
             client.print("<body>");
-            client.print("<button onclick=\"sendRequest('/pose1')\">Set Pose 1</button>");
-            client.print("<button onclick=\"sendRequest('/pose2')\">Set Pose 2</button>");
+            client.print("<div>");
+            client.print("<input type='number' id='pose1_x' placeholder='X' value='0.0'>");
+            client.print("<input type='number' id='pose1_y' placeholder='Y' value='0.0'>");
+            client.print("<input type='number' id='pose1_z' placeholder='Z' value='0.0'>");
+            client.print("<input type='number' id='pose1_roll' placeholder='Roll' value='0.0'>");
+            client.print("<input type='number' id='pose1_pitch' placeholder='Pitch' value='0.0'>");
+            client.print("<input type='number' id='pose1_yaw' placeholder='Yaw' value='0.0'>");
+            client.print("<button onclick=\"sendRequest('/pose1', document.querySelectorAll('#pose1_x, #pose1_y, #pose1_z, #pose1_roll, #pose1_pitch, #pose1_yaw'))\">Set Pose 1</button>");
+            client.print("</div>");
+            client.print("<div>");
+            client.print("<input type='number' id='pose2_x' placeholder='X' value='0.0'>");
+            client.print("<input type='number' id='pose2_y' placeholder='Y' value='0.0'>");
+            client.print("<input type='number' id='pose2_z' placeholder='Z' value='0.0'>");
+            client.print("<input type='number' id='pose2_roll' placeholder='Roll' value='0.0'>");
+            client.print("<input type='number' id='pose2_pitch' placeholder='Pitch' value='0.0'>");
+            client.print("<input type='number' id='pose2_yaw' placeholder='Yaw' value='0.0'>");
+            client.print("<button onclick=\"sendRequest('/pose2', document.querySelectorAll('#pose2_x, #pose2_y, #pose2_z, #pose2_roll, #pose2_pitch, #pose2_yaw'))\">Set Pose 2</button>");
+            client.print("</div>");
+            client.print("<div>");
+            client.print("<input type='number' id='max_accel_trans' placeholder='Max Trans Accel' value='10000'>");
+            client.print("<input type='number' id='max_accel_ang' placeholder='Max Angular Accel' value='10000'>");
+            client.print("<button onclick=\"sendRequest('/setMaxAccel', document.querySelectorAll('#max_accel_trans, #max_accel_ang'))\">Set Max Acceleration</button>");
+            client.print("</div>");
+            client.print("<div>");
+            client.print("<input type='number' id='offset_x' placeholder='X Offset' value='0.0'>");
+            client.print("<input type='number' id='offset_y' placeholder='Y Offset' value='0.0'>");
+            client.print("<input type='number' id='offset_z' placeholder='Z Offset' value='0.0'>");
+            client.print("<input type='number' id='offset_roll' placeholder='Roll Offset' value='0.0'>");
+            client.print("<input type='number' id='offset_pitch' placeholder='Pitch Offset' value='0.0'>");
+            client.print("<input type='number' id='offset_yaw' placeholder='Yaw Offset' value='0.0'>");
+            client.print("<button onclick=\"sendRequest('/setOffsets', document.querySelectorAll('#offset_x, #offset_y, #offset_z, #offset_roll, #offset_pitch, #offset_yaw'))\">Set Offsets</button>");
+            client.print("</div>");
             client.print("</body>");
             client.print("</html>");
 
-            // The HTTP response ends with another blank line:
             client.println();
-            // break out of the while loop:
             break;
-          } else {    // if you got a newline, then clear currentLine:
+          } else {    
+            if (currentLine.indexOf("HTTP/1.1") > 0 || currentLine.indexOf("HTTP/1.0") > 0) {
+              completeRequest = currentLine;  // Save the complete request line
+            }
             currentLine = "";
           }
         } else if (c != '\r') {  // if you got anything else but a carriage return character,
           currentLine += c;      // add it to the end of the currentLine
         }
-
-        // Check to see if the client request was "GET /pose1" or "GET /pose2":
-        if (currentLine.endsWith("GET /pose1")) {
-          controller.setGoalPose(Pose(0, 0, 90, 0, 0, 0));  // Set goal pose to 0, 0, 90, 0, 0, 0
-        }
-        if (currentLine.endsWith("GET /pose2")) {
-          controller.setGoalPose(Pose(0, 0, 130, 0, 0, 0)); // Set goal pose to 0, 0, 130, 0, 0, 0
-        }
       }
     }
-    // close the connection:
+
+    // Only process if we have a complete request
+    if (!isProcessingRequest && requestComplete && completeRequest.length() > 0) {
+      if (completeRequest.startsWith("GET /pose1?params=")) {
+        // Only process if this wasn't the last pose button pressed
+        if (lastButtonPressed != "pose1") {
+          isProcessingRequest = true;
+          String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+          if (params.indexOf("HTTP") > 0) {
+            params = params.substring(0, params.indexOf(" HTTP"));
+          }
+          if (params.indexOf(',') != -1) {  // Ensure we have at least one comma (multiple values)
+            int values[6] = {0};
+            int index = 0;
+            while (params.length() > 0 && index < 6) {
+              int commaIndex = params.indexOf(',');
+              if (commaIndex == -1) {
+                values[index++] = params.toInt();
+                break;
+              } else {
+                values[index++] = params.substring(0, commaIndex).toInt();
+                params = params.substring(commaIndex + 1);
+              }
+            }
+            controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
+            lastButtonPressed = "pose1";  // Update last button pressed
+          }
+          isProcessingRequest = false;
+        }
+      }
+      if (completeRequest.startsWith("GET /pose2?params=")) {
+        // Only process if this wasn't the last pose button pressed
+        if (lastButtonPressed != "pose2") {
+          isProcessingRequest = true;
+          String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+          if (params.indexOf("HTTP") > 0) {
+            params = params.substring(0, params.indexOf(" HTTP"));
+          }
+          if (params.indexOf(',') != -1) {
+            int values[6] = {0};
+            int index = 0;
+            while (params.length() > 0 && index < 6) {
+              int commaIndex = params.indexOf(',');
+              if (commaIndex == -1) {
+                values[index++] = params.toInt();
+                break;
+              } else {
+                values[index++] = params.substring(0, commaIndex).toInt();
+                params = params.substring(commaIndex + 1);
+              }
+            }
+            controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
+            lastButtonPressed = "pose2";  // Update last button pressed
+          }
+          isProcessingRequest = false;
+        }
+      }
+      if (completeRequest.startsWith("GET /setMaxAccel?params=")) {
+        isProcessingRequest = true;
+        String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+        if (params.indexOf("HTTP") > 0) {
+          params = params.substring(0, params.indexOf(" HTTP"));
+        }
+        if (params.indexOf(',') != -1) {
+          float maxTransAccel = params.substring(0, params.indexOf(',')).toFloat();
+          float maxAngularAccel = params.substring(params.indexOf(',') + 1).toFloat();
+          controller.setAccelerationLimits(maxTransAccel, maxAngularAccel);
+        }
+        isProcessingRequest = false;
+      }
+      if (completeRequest.startsWith("GET /setOffsets?params=")) {
+        isProcessingRequest = true;
+        String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+        if (params.indexOf("HTTP") > 0) {
+          params = params.substring(0, params.indexOf(" HTTP"));
+        }
+        if (params.indexOf(',') != -1) {
+          vector<float> offsets;  // Create a vector to hold the offsets
+          while (params.length() > 0) {
+            int commaIndex = params.indexOf(',');
+            if (commaIndex == -1) {
+              offsets.push_back(params.toFloat());  // Add the last value
+              break;
+            } else {
+              offsets.push_back(params.substring(0, commaIndex).toFloat());  // Add each value
+              params = params.substring(commaIndex + 1);
+            }
+          }
+          controller.setOffsets(offsets);  // Pass the vector to setOffsets
+        }
+        isProcessingRequest = false;
+      }
+    }
     client.stop();
-    //Serial.println("Client Disconnected.");
   }
 }
 
