@@ -8,6 +8,7 @@ body {
     font-size: 30px;
     text-align: center;
     gap: 100px;
+    background-color: #0099a109;
 }
 
 label {
@@ -15,31 +16,38 @@ label {
     color: #000;
     font-family: sans-serif;
     text-align: right;
-    padding-right: 10px;
+    padding-right: 0px;
+    padding-left: 0px;
     line-height: 45px; /* This helps align labels vertically with inputs */
 }
 
 button {
+    width: 100%; 
     padding: 20px;
     margin: 10px;
-    background: rgb(0, 207, 135);
-    color: white;
+    background: #0099a1; 
+    color: rgb(255, 255, 255);
     border: none;
     border-radius: 10px;
-    font-size: 30px;
+    font-size: 50px;
     font-family: sans-serif;
     cursor: pointer;
+    transition: all 0.3s ease;
+
 }
 
 button:hover {
-    background: rgb(0, 90, 63);
+    background: #0099a17f; 
+    transform: scale(1.02);
 }
 
 input {
-    width: 100px;
+    width: 120px;
     margin: 5px;
     font-size: 30px;
     font-family: sans-serif;
+    background-color: #0099a121;  
+    color: #000;
 }
 
 html, body {
@@ -66,9 +74,7 @@ html, body {
                         75%     93.3%,
                         25%     93.3%,
                         12.5%   71.65%);
-    background-color: #0099a1;
     color: white;
-    transition: all 0.3s ease;
     position: absolute;
     transform-origin: 50% 49%;
     display: flex;
@@ -79,7 +85,6 @@ html, body {
 
 /* Update the active state to combine with rotations */
 .button.custom-hexagon.active {
-    background-color: #218825;
     transform: scale(0.95) rotate(60deg) !important;  /* For hexagon 1 */
 }
 
@@ -111,10 +116,7 @@ html, body {
     transform: rotate(0deg);  /* Counter-rotate to keep arrow straight */
 }
 
-/* Base hover effect without rotation */
-.button.custom-hexagon:hover {
-    background-color: #7734f4;
-}
+
 
 /* Keep original rotations without hover changes */
 .custom-hexagon-1 {
@@ -175,33 +177,22 @@ html, body {
 
 .pose-grid {
     display: grid;
-    grid-template-columns: auto 100px auto 100px;
+    grid-template-columns: auto auto auto auto;
     gap: 20px;
     justify-content: center;
     margin-top: 20px;
-    column-gap: 50px;
+    column-gap: 20px;
+}
+.pose-grid label {
+    text-align: right;
+    padding-right: 0px;
+    padding-left: 20px;
 }
 
-.pose-container button {
-    width: 100%;  /* Make the Set Pose button wider */
-    padding: 20px;
-    margin: 10px;
-    background: rgb(0, 207, 135);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 60px;
-    font-family: sans-serif;
-    cursor: pointer;
-}
-
-.pose-container button:hover {
-    background: rgb(0, 90, 63);
-}
 
 .offsets-grid {
     display: grid;
-    grid-template-columns: auto 100px auto 100px;
+    grid-template-columns: auto 100px;
     gap: 20px;
     justify-content: center;
     margin-top: 20px;
