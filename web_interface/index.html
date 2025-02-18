@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSS and JS will be injected here by the combine script -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="walking-container">
+        <div class="walking-buttons">
+            <button class="button custom-hexagon custom-hexagon-1"></button>
+            <button class="button custom-hexagon custom-hexagon-2"></button>
+            <button class="button custom-hexagon custom-hexagon-3"></button>
+        </div>
+        <div>
+            <label>Speed Multiplier</label>
+        </div>
+        <div>
+            <input type='number' id='speed_multiplier' placeholder='speed multiplier' value='0.0'>
+        </div>
+    </div>
+    
+    <div class="pose-container">
+        <div>
+            <button onclick="sendRequest('set_pose', document.querySelectorAll('input'))">Set Pose</button>
+        </div>
+        <div class="pose-grid">
+            <label>X</label>
+            <input type='number' id='pose_x' placeholder='X' value='0.0'>
+            <label>Roll</label>
+            <input type='number' id='pose_roll' placeholder='Roll' value='0.0'>
+            
+            <label>Y</label>
+            <input type='number' id='pose_y' placeholder='Y' value='0.0'>
+            <label>Pitch</label>
+            <input type='number' id='pose_pitch' placeholder='Pitch' value='0.0'>
+            
+            <label>Z</label>
+            <input type='number' id='pose_z' placeholder='Z' value='0.0'>
+            <label>Yaw</label>
+            <input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>
+        </div>
+    </div>
+
+    <div class="offsets-container">
+        <div>
+            <button onclick="sendRequest('set_offsets', document.querySelectorAll('input'))">Set Offsets</button>
+        </div>
+        <div class="offsets-grid">
+            <label>Servo 1</label>
+            <input type='number' id='offset_1' placeholder='offset1' value='0.0'>
+            
+            <label>Servo 2</label>
+            <input type='number' id='offset_2' placeholder='offset2' value='0.0'>
+
+            <label>Servo 3</label>
+            <input type='number' id='offset_3' placeholder='offset3' value='0.0'>
+
+            <label>Servo 4</label>
+            <input type='number' id='offset_4' placeholder='offset4' value='0.0'>
+
+            <label>Servo 5</label>
+            <input type='number' id='offset_5' placeholder='offset5' value='0.0'>
+
+            <label>Servo 6</label>
+            <input type='number' id='offset_6' placeholder='offset6' value='0.0'>
+        </div>
+    </div>
+
+</body>
+</html> 

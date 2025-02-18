@@ -1,0 +1,208 @@
+body {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-size: 30px;
+    text-align: center;
+    gap: 100px;
+}
+
+label {
+    font-size: 30px;
+    color: #000;
+    font-family: sans-serif;
+    text-align: right;
+    padding-right: 10px;
+    line-height: 45px; /* This helps align labels vertically with inputs */
+}
+
+button {
+    padding: 20px;
+    margin: 10px;
+    background: rgb(0, 207, 135);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 30px;
+    font-family: sans-serif;
+    cursor: pointer;
+}
+
+button:hover {
+    background: rgb(0, 90, 63);
+}
+
+input {
+    width: 100px;
+    margin: 5px;
+    font-size: 30px;
+    font-family: sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Custom Hexagon Button */
+.button.custom-hexagon {
+    width: 300px;
+    aspect-ratio: 1;
+    clip-path: polygon( 50%     50%,
+                        87.5%   71.65%,
+                        75%     93.3%,
+                        25%     93.3%,
+                        12.5%   71.65%);
+    background-color: #0099a1;
+    color: white;
+    transition: all 0.3s ease;
+    position: absolute;
+    transform-origin: 50% 49%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+}
+
+/* Update the active state to combine with rotations */
+.button.custom-hexagon.active {
+    background-color: #218825;
+    transform: scale(0.95) rotate(60deg) !important;  /* For hexagon 1 */
+}
+
+/* Container for the rotating hexagons */
+.walking-buttons {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;  /* Center horizontally */
+    align-items: center;      /* Center vertically */
+}
+
+.walking-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Position the hexagons absolutely within container */
+.button.custom-hexagon::after {
+    content: '↓';  /* Unicode down arrow */
+    color: white;
+    font-size: 80px;
+    position: absolute;
+    top: 170px;
+    /* Adjust position to account for rotation */
+    transform: rotate(0deg);  /* Counter-rotate to keep arrow straight */
+}
+
+/* Base hover effect without rotation */
+.button.custom-hexagon:hover {
+    background-color: #7734f4;
+}
+
+/* Keep original rotations without hover changes */
+.custom-hexagon-1 {
+    transform: rotate(60deg);
+}
+
+.custom-hexagon-2 {
+    transform: rotate(180deg);
+}
+
+.custom-hexagon-3 {
+    transform: rotate(300deg);
+}
+
+/* Add these new hover states that combine scale with rotation */
+.custom-hexagon-1:hover {
+    transform: scale(1.03) rotate(60deg);
+}
+
+.custom-hexagon-2:hover {
+    transform: scale(1.03) rotate(179.99deg);
+}
+
+.custom-hexagon-3:hover {
+    transform: scale(1.03) rotate(300deg);
+}
+
+/* Active states with fixed rotations */
+.custom-hexagon-1.active {
+    transform: rotate(60deg);
+}
+
+.custom-hexagon-2.active {
+    transform: rotate(180deg);
+}
+
+.custom-hexagon-3.active {
+    transform: rotate(300deg);
+}
+
+/* Counter-rotate arrows to keep them pointing down */
+.custom-hexagon-1::after {
+    transform: rotate(0deg);
+}
+
+
+.custom-hexagon-3::after {
+    transform: rotate(-240deg);  /* Counter-rotate by negative angle */
+}
+
+.pose-inputs {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+
+.pose-grid {
+    display: grid;
+    grid-template-columns: auto 100px auto 100px;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+    column-gap: 50px;
+}
+
+.pose-container button {
+    width: 100%;  /* Make the Set Pose button wider */
+    padding: 20px;
+    margin: 10px;
+    background: rgb(0, 207, 135);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 60px;
+    font-family: sans-serif;
+    cursor: pointer;
+}
+
+.pose-container button:hover {
+    background: rgb(0, 90, 63);
+}
+
+.offsets-grid {
+    display: grid;
+    grid-template-columns: auto 100px auto 100px;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
