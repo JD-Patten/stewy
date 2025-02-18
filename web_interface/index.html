@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- CSS and JS will be injected here by the combine script -->
     <link rel="stylesheet" href="styles.css">
+    <script src="script.js"></script>
 </head>
 <body>
     <div class="walking-container">
@@ -22,7 +23,14 @@
     
     <div class="pose-container">
         <div>
-            <button onclick="sendRequest('/pose1', document.querySelectorAll('#pose_x, #pose_y, #pose_z, #pose_roll, #pose_pitch, #pose_yaw'))">Set Pose</button>
+            <button onclick="sendRequest('/pose1', [
+                document.getElementById('pose_x'),
+                document.getElementById('pose_y'),
+                document.getElementById('pose_z'),
+                document.getElementById('pose_roll'),
+                document.getElementById('pose_pitch'),
+                document.getElementById('pose_yaw')
+            ])">Set Pose</button>
         </div>
         <div class="pose-grid">
             <label>X</label>
@@ -42,6 +50,7 @@
         </div>
     </div>
 
+    <button class="toggle-button" onclick="toggleOffsets()">⚙️</button>
     <div class="offsets-container">
         <div>
             <button onclick="sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))">Set Offsets</button>

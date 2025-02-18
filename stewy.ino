@@ -18,14 +18,16 @@ WiFiServer server(80);
 
 // Servo setup
 Servo servos[6];
-int servoPins[6] = {18, 2, 10, 1, 3, 17};
+int servoPins[6] = {2,3,18,17,10, 1};
+
+vector<float> servoOffsets = {4, 0, 0, 5, 0, -3};
 
 // Create IK solver instance
 IKSolver ikSolver(
     50,     // servoArmLength
     100,    // arm2Length
-    20,     // servoOffset1
-    72,     // servoOffset2
+    15.5,     // servoOffset1
+    70,     // servoOffset2
     0,      // servoZOffset
     15,     // draftAngle
     20,     // topPlateOffset1
@@ -73,6 +75,7 @@ void setup() {
 
 
   // start the controller
+  controller.setOffsets(servoOffsets);
   controller.begin(Pose(0, 0, 100, 0, 0, 0));
   controller.setGoalPose(Pose(0, 0, 130, 0, 0, 0));
 }
@@ -102,51 +105,242 @@ void loop() {
             client.print("<html lang=\"en\">");
             client.print("<head>");
             client.print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+            client.print("<!-- CSS and JS will be injected here by the combine script -->");
+            client.print("<link rel=\"stylesheet\" href=\"styles.css\">");
             client.print("<style>");
-            client.print("body { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; font-size: 24px; text-align: center; }");
-            client.print("button { padding: 20px; margin: 10px; background:rgb(0, 207, 135); color: white; border: none; border-radius: 10px; font-size: 24px; cursor: pointer; }");
-            client.print("button:hover { background:rgb(0, 90, 63); }");
-            client.print("input { width: 50px; margin: 5px; }");
+            client.print("body {");
+            client.print("display: flex;");
+            client.print("flex-direction: row;");
+            client.print("justify-content: center;");
+            client.print("align-items: center;");
+            client.print("height: 100vh;");
+            client.print("margin: 0;");
+            client.print("font-size: 30px;");
+            client.print("text-align: center;");
+            client.print("gap: 100px;");
+            client.print("background-color: #0099a109;");
+            client.print("}");
+            client.print("label {");
+            client.print("font-size: 30px;");
+            client.print("color: #000;");
+            client.print("font-family: sans-serif;");
+            client.print("text-align: right;");
+            client.print("padding-right: 0px;");
+            client.print("padding-left: 0px;");
+            client.print("line-height: 45px; /* This helps align labels vertically with inputs */");
+            client.print("}");
+            client.print("button {");
+            client.print("width: 100%;");
+            client.print("padding: 20px;");
+            client.print("margin: 10px;");
+            client.print("background: #0099a1;");
+            client.print("color: rgb(255, 255, 255);");
+            client.print("border: none;");
+            client.print("border-radius: 10px;");
+            client.print("font-size: 50px;");
+            client.print("font-family: sans-serif;");
+            client.print("cursor: pointer;");
+            client.print("transition: all 0.3s ease;");
+            client.print("}");
+            client.print("button:hover {");
+            client.print("background: #0099a17f;");
+            client.print("transform: scale(1.02);");
+            client.print("}");
+            client.print("input {");
+            client.print("width: 120px;");
+            client.print("margin: 5px;");
+            client.print("font-size: 30px;");
+            client.print("font-family: sans-serif;");
+            client.print("background-color: #0099a121;");
+            client.print("color: #000;");
+            client.print("}");
+            client.print("html, body {");
+            client.print("margin: 0;");
+            client.print("padding: 0;");
+            client.print("width: 100%;");
+            client.print("height: 100%;");
+            client.print("overflow: hidden;");
+            client.print("}");
+            client.print(".container {");
+            client.print("width: 100%;");
+            client.print("height: 100%;");
+            client.print("display: flex;");
+            client.print("flex-direction: column;");
+            client.print("}");
+            client.print("/* Custom Hexagon Button */");
+            client.print(".button.custom-hexagon {");
+            client.print("width: 300px;");
+            client.print("aspect-ratio: 1;");
+            client.print("clip-path: polygon( 50%     50%,");
+            client.print("87.5%   71.65%,");
+            client.print("75%     93.3%,");
+            client.print("25%     93.3%,");
+            client.print("12.5%   71.65%);");
+            client.print("color: white;");
+            client.print("position: absolute;");
+            client.print("transform-origin: 50% 49%;");
+            client.print("display: flex;");
+            client.print("align-items: center;");
+            client.print("justify-content: center;");
+            client.print("border-radius: 15px;");
+            client.print("}");
+            client.print("/* Update the active state to combine with rotations */");
+            client.print(".button.custom-hexagon.active {");
+            client.print("transform: scale(0.95) rotate(60deg) !important;  /* For hexagon 1 */");
+            client.print("}");
+            client.print("/* Container for the rotating hexagons */");
+            client.print(".walking-buttons {");
+            client.print("position: relative;");
+            client.print("width: 300px;");
+            client.print("height: 300px;");
+            client.print("display: flex;");
+            client.print("justify-content: center;  /* Center horizontally */");
+            client.print("align-items: center;      /* Center vertically */");
+            client.print("}");
+            client.print(".walking-container {");
+            client.print("display: flex;");
+            client.print("flex-direction: column;");
+            client.print("align-items: center;");
+            client.print("justify-content: center;");
+            client.print("}");
+            client.print("/* Position the hexagons absolutely within container */");
+            client.print(".button.custom-hexagon::after {");
+            client.print("content: 'V';");
+            client.print("color: white;");
+            client.print("font-size: 80px;");
+            client.print("position: absolute;");
+            client.print("top: 170px;");
+            client.print("transform: rotate(0deg);");
+            client.print("}");
+            client.print("/* Keep original rotations without hover changes */");
+            client.print(".custom-hexagon-1 {");
+            client.print("transform: rotate(60deg);");
+            client.print("}");
+            client.print(".custom-hexagon-2 {");
+            client.print("transform: rotate(180deg);");
+            client.print("}");
+            client.print(".custom-hexagon-3 {");
+            client.print("transform: rotate(300deg);");
+            client.print("}");
+            client.print("/* Add these new hover states that combine scale with rotation */");
+            client.print(".custom-hexagon-1:hover {");
+            client.print("transform: scale(1.03) rotate(60deg);");
+            client.print("}");
+            client.print(".custom-hexagon-2:hover {");
+            client.print("transform: scale(1.03) rotate(179.99deg);");
+            client.print("}");
+            client.print(".custom-hexagon-3:hover {");
+            client.print("transform: scale(1.03) rotate(300deg);");
+            client.print("}");
+            client.print("/* Active states with fixed rotations */");
+            client.print(".custom-hexagon-1.active {");
+            client.print("transform: rotate(60deg);");
+            client.print("}");
+            client.print(".custom-hexagon-2.active {");
+            client.print("transform: rotate(180deg);");
+            client.print("}");
+            client.print(".custom-hexagon-3.active {");
+            client.print("transform: rotate(300deg);");
+            client.print("}");
+            client.print("/* Counter-rotate arrows to keep them pointing down */");
+            client.print(".custom-hexagon-1::after {");
+            client.print("transform: rotate(0deg);");
+            client.print("}");
+            client.print(".custom-hexagon-3::after {");
+            client.print("transform: rotate(-240deg);  /* Counter-rotate by negative angle */");
+            client.print("}");
+            client.print(".pose-inputs {");
+            client.print("display: flex;");
+            client.print("gap: 40px;");
+            client.print("justify-content: center;");
+            client.print("margin-top: 20px;");
+            client.print("}");
+            client.print(".pose-grid {");
+            client.print("display: grid;");
+            client.print("grid-template-columns: auto auto auto auto;");
+            client.print("gap: 20px;");
+            client.print("justify-content: center;");
+            client.print("margin-top: 20px;");
+            client.print("column-gap: 20px;");
+            client.print("}");
+            client.print(".pose-grid label {");
+            client.print("text-align: right;");
+            client.print("padding-right: 0px;");
+            client.print("padding-left: 20px;");
+            client.print("}");
+            client.print(".offsets-grid {");
+            client.print("display: grid;");
+            client.print("grid-template-columns: auto 100px;");
+            client.print("gap: 20px;");
+            client.print("justify-content: center;");
+            client.print("margin-top: 20px;");
+            client.print("}");
             client.print("</style>");
             client.print("<script>");
             client.print("function sendRequest(command, inputs) {");
-            client.print("  const params = Array.from(inputs).map(input => input.value).join(',');");
-            client.print("  fetch(`${command}?params=${params}`);");  // Send GET request with parameters
+            client.print("const params = Array.from(inputs).map(input => input.value).join(',');");
+            client.print("fetch(`${command}?params=${params}`);");
             client.print("}");
             client.print("</script>");
             client.print("</head>");
             client.print("<body>");
-            client.print("<div>");
-            client.print("<input type='number' id='pose1_x' placeholder='X' value='0.0'>");
-            client.print("<input type='number' id='pose1_y' placeholder='Y' value='0.0'>");
-            client.print("<input type='number' id='pose1_z' placeholder='Z' value='0.0'>");
-            client.print("<input type='number' id='pose1_roll' placeholder='Roll' value='0.0'>");
-            client.print("<input type='number' id='pose1_pitch' placeholder='Pitch' value='0.0'>");
-            client.print("<input type='number' id='pose1_yaw' placeholder='Yaw' value='0.0'>");
-            client.print("<button onclick=\"sendRequest('/pose1', document.querySelectorAll('#pose1_x, #pose1_y, #pose1_z, #pose1_roll, #pose1_pitch, #pose1_yaw'))\">Set Pose 1</button>");
+            client.print("<div class=\"walking-container\">");
+            client.print("<div class=\"walking-buttons\">");
+            client.print("<button class=\"button custom-hexagon custom-hexagon-1\"></button>");
+            client.print("<button class=\"button custom-hexagon custom-hexagon-2\"></button>");
+            client.print("<button class=\"button custom-hexagon custom-hexagon-3\"></button>");
             client.print("</div>");
             client.print("<div>");
-            client.print("<input type='number' id='pose2_x' placeholder='X' value='0.0'>");
-            client.print("<input type='number' id='pose2_y' placeholder='Y' value='0.0'>");
-            client.print("<input type='number' id='pose2_z' placeholder='Z' value='0.0'>");
-            client.print("<input type='number' id='pose2_roll' placeholder='Roll' value='0.0'>");
-            client.print("<input type='number' id='pose2_pitch' placeholder='Pitch' value='0.0'>");
-            client.print("<input type='number' id='pose2_yaw' placeholder='Yaw' value='0.0'>");
-            client.print("<button onclick=\"sendRequest('/pose2', document.querySelectorAll('#pose2_x, #pose2_y, #pose2_z, #pose2_roll, #pose2_pitch, #pose2_yaw'))\">Set Pose 2</button>");
+            client.print("<label>Speed Multiplier</label>");
             client.print("</div>");
             client.print("<div>");
-            client.print("<input type='number' id='max_accel_trans' placeholder='Max Trans Accel' value='10000'>");
-            client.print("<input type='number' id='max_accel_ang' placeholder='Max Angular Accel' value='10000'>");
-            client.print("<button onclick=\"sendRequest('/setMaxAccel', document.querySelectorAll('#max_accel_trans, #max_accel_ang'))\">Set Max Acceleration</button>");
+            client.print("<input type='number' id='speed_multiplier' placeholder='speed multiplier' value='0.0'>");
             client.print("</div>");
+            client.print("</div>");
+            client.print("<div class=\"pose-container\">");
             client.print("<div>");
-            client.print("<input type='number' id='offset_x' placeholder='X Offset' value='0.0'>");
-            client.print("<input type='number' id='offset_y' placeholder='Y Offset' value='0.0'>");
-            client.print("<input type='number' id='offset_z' placeholder='Z Offset' value='0.0'>");
-            client.print("<input type='number' id='offset_roll' placeholder='Roll Offset' value='0.0'>");
-            client.print("<input type='number' id='offset_pitch' placeholder='Pitch Offset' value='0.0'>");
-            client.print("<input type='number' id='offset_yaw' placeholder='Yaw Offset' value='0.0'>");
-            client.print("<button onclick=\"sendRequest('/setOffsets', document.querySelectorAll('#offset_x, #offset_y, #offset_z, #offset_roll, #offset_pitch, #offset_yaw'))\">Set Offsets</button>");
+            client.print("<button onclick=\"sendRequest('/pose1', [");
+            client.print("document.getElementById('pose_x'),");
+            client.print("document.getElementById('pose_y'),");
+            client.print("document.getElementById('pose_z'),");
+            client.print("document.getElementById('pose_roll'),");
+            client.print("document.getElementById('pose_pitch'),");
+            client.print("document.getElementById('pose_yaw')");
+            client.print("])\">Set Pose</button>");
+            client.print("</div>");
+            client.print("<div class=\"pose-grid\">");
+            client.print("<label>X</label>");
+            client.print("<input type='number' id='pose_x' placeholder='X' value='0.0'>");
+            client.print("<label>Roll</label>");
+            client.print("<input type='number' id='pose_roll' placeholder='Roll' value='0.0'>");
+            client.print("<label>Y</label>");
+            client.print("<input type='number' id='pose_y' placeholder='Y' value='0.0'>");
+            client.print("<label>Pitch</label>");
+            client.print("<input type='number' id='pose_pitch' placeholder='Pitch' value='0.0'>");
+            client.print("<label>Z</label>");
+            client.print("<input type='number' id='pose_z' placeholder='Z' value='0.0'>");
+            client.print("<label>Yaw</label>");
+            client.print("<input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>");
+            client.print("</div>");
+            client.print("</div>");
+            client.print("<div class=\"offsets-container\">");
+            client.print("<div>");
+            client.print("<button onclick=\"sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))\">Set Offsets</button>");
+            client.print("</div>");
+            client.print("<div class=\"offsets-grid\">");
+            client.print("<label>Servo 1</label>");
+            client.print("<input type='number' id='offset_1' placeholder='offset1' value='0.0'>");
+            client.print("<label>Servo 2</label>");
+            client.print("<input type='number' id='offset_2' placeholder='offset2' value='0.0'>");
+            client.print("<label>Servo 3</label>");
+            client.print("<input type='number' id='offset_3' placeholder='offset3' value='0.0'>");
+            client.print("<label>Servo 4</label>");
+            client.print("<input type='number' id='offset_4' placeholder='offset4' value='0.0'>");
+            client.print("<label>Servo 5</label>");
+            client.print("<input type='number' id='offset_5' placeholder='offset5' value='0.0'>");
+            client.print("<label>Servo 6</label>");
+            client.print("<input type='number' id='offset_6' placeholder='offset6' value='0.0'>");
+            client.print("</div>");
             client.print("</div>");
             client.print("</body>");
             client.print("</html>");
@@ -169,30 +363,29 @@ void loop() {
     if (!isProcessingRequest && requestComplete && completeRequest.length() > 0) {
       if (completeRequest.startsWith("GET /pose1?params=")) {
         // Only process if this wasn't the last pose button pressed
-        if (lastButtonPressed != "pose1") {
-          isProcessingRequest = true;
-          String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
-          if (params.indexOf("HTTP") > 0) {
-            params = params.substring(0, params.indexOf(" HTTP"));
-          }
-          if (params.indexOf(',') != -1) {  // Ensure we have at least one comma (multiple values)
-            int values[6] = {0};
-            int index = 0;
-            while (params.length() > 0 && index < 6) {
-              int commaIndex = params.indexOf(',');
-              if (commaIndex == -1) {
-                values[index++] = params.toInt();
-                break;
-              } else {
-                values[index++] = params.substring(0, commaIndex).toInt();
-                params = params.substring(commaIndex + 1);
-              }
-            }
-            controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
-            lastButtonPressed = "pose1";  // Update last button pressed
-          }
-          isProcessingRequest = false;
+
+        isProcessingRequest = true;
+        String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+        if (params.indexOf("HTTP") > 0) {
+          params = params.substring(0, params.indexOf(" HTTP"));
         }
+        if (params.indexOf(',') != -1) {  // Ensure we have at least one comma (multiple values)
+          int values[6] = {0};
+          int index = 0;
+          while (params.length() > 0 && index < 6) {
+            int commaIndex = params.indexOf(',');
+            if (commaIndex == -1) {
+              values[index++] = params.toInt();
+              break;
+            } else {
+              values[index++] = params.substring(0, commaIndex).toInt();
+              params = params.substring(commaIndex + 1);
+            }
+          }
+          controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
+          lastButtonPressed = "pose1";  // Update last button pressed
+        }
+        isProcessingRequest = false;
       }
       if (completeRequest.startsWith("GET /pose2?params=")) {
         // Only process if this wasn't the last pose button pressed

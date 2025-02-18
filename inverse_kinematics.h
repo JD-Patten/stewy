@@ -26,6 +26,17 @@ struct IKResult {
 struct Pose {
     float x, y, z, roll, pitch, yaw;
 
+    // Add equality operator
+    bool operator==(const Pose& other) const {
+        const float epsilon = 0.0001f;  // Small threshold for float comparison
+        return (abs(x - other.x) < epsilon &&
+                abs(y - other.y) < epsilon &&
+                abs(z - other.z) < epsilon &&
+                abs(roll - other.roll) < epsilon &&
+                abs(pitch - other.pitch) < epsilon &&
+                abs(yaw - other.yaw) < epsilon);
+    }
+
     // Add array-like access
     float& operator[](int index) {
         switch(index) {

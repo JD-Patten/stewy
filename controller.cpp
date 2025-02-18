@@ -125,18 +125,24 @@ void Controller::update() {
 }
 
 void Controller::setGoalPose(const Pose& goalPose) {
+    // check if the goal pose is different from the current pose
+    if (_goalPose == goalPose) {
+        Serial.println("Goal pose is the same as the current pose");
+        return;
+    }
+
     // check if goal pose is valid
     IKResult result = _ikSolver.solveInverseKinematics(goalPose);
-    if (result.success){
-        _goalPose = goalPose; // update goal pose   
-        Serial.println("Goal pose set to: "); 
-        Serial.println(goalPose.toString());
-        set_trajectory(_currentPose, _goalPose);
-    }
-    else {
+    if (!result.success) {
         Serial.println("Failed to solve inverse kinematics for goal pose: ");
         Serial.println(goalPose.toString());
+        return;
     }
+
+    _goalPose = goalPose; // update goal pose   
+    Serial.println("Goal pose set to: "); 
+    Serial.println(goalPose.toString());
+    set_trajectory(_currentPose, _goalPose);
     
 }
 
