@@ -107,7 +107,7 @@ html, body {
 
 /* Position the hexagons absolutely within container */
 .button.custom-hexagon::after {
-    content: '⬇';  /* Changed from '↓' to '⬇' (Unicode Heavy Down Arrow U+2B07) */
+    content: '\2193';  /* Unicode Down Arrow U+2193 */
     color: white;
     font-size: 80px;
     position: absolute;
@@ -199,12 +199,12 @@ html, body {
 
 /* Add these new styles at the end of the file */
 .toggle-button {
-    width: 50px;
-    height: 50px;
+    width: 90px;
+    height: 90px;
     border-radius: 50%;
     background: #0099a1;
     color: white;
-    font-size: 24px;
+    font-size: 45px;
     padding: 0;
     margin: 10px;
     display: flex;
@@ -213,13 +213,19 @@ html, body {
     position: absolute;
     right: 20px;
     top: 20px;
+    text-shadow: 0 0 20px rgb(255, 255, 255);  /* Added for better visibility */
 }
 
-.toggle-button:hover {
-    background: #0099a17f;
-    transform: scale(1.05);
-}
 
 .hidden {
     display: none;
 }
+
+.accel-grid {
+    display: grid;
+    grid-template-columns: auto 100px;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
+

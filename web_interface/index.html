@@ -17,7 +17,7 @@
             <label>Speed Multiplier</label>
         </div>
         <div>
-            <input type='number' id='speed_multiplier' placeholder='speed multiplier' value='0.0'>
+            <input type='number' id='speed_multiplier' placeholder='speed multiplier' value='1.0'>
         </div>
     </div>
     
@@ -51,7 +51,7 @@
     </div>
 
     <button class="toggle-button" onclick="toggleOffsets()">⚙️</button>
-    <div class="offsets-container">
+    <div class="offsets-container hidden">
         <div>
             <button onclick="sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))">Set Offsets</button>
         </div>
@@ -73,6 +73,22 @@
 
             <label>Servo 6</label>
             <input type='number' id='offset_6' placeholder='offset6' value='0.0'>
+        </div>
+    </div>
+
+    <div class="accel-container hidden">
+        <div>
+            <button onclick="sendRequest('/setMaxAccel', [
+                document.getElementById('max_trans_accel'),
+                document.getElementById('max_angular_accel')
+            ])">Set Accelerations</button>
+        </div>
+        <div class="accel-grid">
+            <label>Translational</label>
+            <input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>
+            
+            <label>Rotational</label>
+            <input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>
         </div>
     </div>
 
