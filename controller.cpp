@@ -8,8 +8,8 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float kp, float ki, 
     , _servoAngleOffsets(6, 0.0)
     , _servoAngleMin(-80.0)             //degrees
     , _servoAngleMax(80.0)              //degrees
-    , _maxAcceleration(10.0)            //mm/s^2
-    , _maxAngularAcceleration(10.0)     //degrees/s^2
+    , _maxAcceleration(100.0)            //mm/s^2
+    , _maxAngularAcceleration(100.0)     //degrees/s^2
     , _plotCounter(0)
 {
     // Initialize ESP32 PWM

@@ -12,14 +12,11 @@
 // Set these to your desired credentials.
 const char *ssid = "stewyAP";
 const char *password = "stewy123";
-
 WiFiServer server(80);
-
 
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {2,3,18,17,10, 1};
-
 vector<float> servoOffsets = {4, 0, 0, 5, 0, -3};
 
 // Create IK solver instance
@@ -36,9 +33,6 @@ IKSolver ikSolver(
 );
 
 Controller controller(servoPins, ikSolver, 0, 0, 0, 10, 10 );  
-
-// Variable to track the last button pressed
-String lastButtonPressed = "";
 
 bool isProcessingRequest = false;  // Added to handle multiple requests
 
@@ -106,7 +100,6 @@ void loop() {
             client.print("<head>");
             client.print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             client.print("<!-- CSS and JS will be injected here by the combine script -->");
-            client.print("<link rel=\"stylesheet\" href=\"styles.css\">");
             client.print("<style>");
             client.print("body {");
             client.print("display: flex;");
@@ -205,7 +198,7 @@ void loop() {
             client.print("}");
             client.print("/* Position the hexagons absolutely within container */");
             client.print(".button.custom-hexagon::after {");
-            client.print("content: 'V';");
+            client.print("content:'\\2193';"); 
             client.print("color: white;");
             client.print("font-size: 80px;");
             client.print("position: absolute;");
@@ -275,11 +268,46 @@ void loop() {
             client.print("justify-content: center;");
             client.print("margin-top: 20px;");
             client.print("}");
+            client.print("/* Add these new styles at the end of the file */");
+            client.print(".toggle-button {");
+            client.print("width: 90px;");
+            client.print("height: 90px;");
+            client.print("border-radius: 50%;");
+            client.print("background: #0099a1;");
+            client.print("color: white;");
+            client.print("font-size: 45px;");
+            client.print("padding: 0;");
+            client.print("margin: 10px;");
+            client.print("display: flex;");
+            client.print("align-items: center;");
+            client.print("justify-content: center;");
+            client.print("position: absolute;");
+            client.print("right: 20px;");
+            client.print("top: 20px;");
+            client.print("text-shadow: 0 0 20px rgb(255, 255, 255);  /* Added for better visibility */");
+            client.print("}");
+            client.print(".hidden {");
+            client.print("display: none;");
+            client.print("}");
+            client.print(".accel-grid {");
+            client.print("display: grid;");
+            client.print("grid-template-columns: auto 100px;");
+            client.print("gap: 20px;");
+            client.print("justify-content: center;");
+            client.print("margin-top: 20px;");
+            client.print("}");
             client.print("</style>");
             client.print("<script>");
-            client.print("function sendRequest(command, inputs) {");
-            client.print("const params = Array.from(inputs).map(input => input.value).join(',');");
-            client.print("fetch(`${command}?params=${params}`);");
+            client.print("function sendRequest(command,inputs){const params=Array.from(inputs).map(input=>input.value).join(',');fetch(`${command}?params=${params}`);}");
+
+            client.print("function toggleOffsets(){");
+            client.print("const settingsContainers=document.querySelectorAll('.offsets-container,.accel-container');");
+            client.print("const mainContainers=document.querySelectorAll('.walking-container,.pose-container');");
+            client.print("const settingsHidden=document.querySelector('.offsets-container').classList.contains('hidden');");
+            client.print("const toggleButton=document.querySelector('.toggle-button');");
+            client.print("toggleButton.textContent=settingsHidden?'\\u{1F3AE}':'\\u{2699}';");
+            client.print("settingsContainers.forEach(container=>{container.classList.toggle('hidden',!settingsHidden);});");
+            client.print("mainContainers.forEach(container=>{container.classList.toggle('hidden',settingsHidden);});");
             client.print("}");
             client.print("</script>");
             client.print("</head>");
@@ -294,7 +322,7 @@ void loop() {
             client.print("<label>Speed Multiplier</label>");
             client.print("</div>");
             client.print("<div>");
-            client.print("<input type='number' id='speed_multiplier' placeholder='speed multiplier' value='0.0'>");
+            client.print("<input type='number' id='speed_multiplier' placeholder='speed multiplier' value='1.0'>");
             client.print("</div>");
             client.print("</div>");
             client.print("<div class=\"pose-container\">");
@@ -323,7 +351,8 @@ void loop() {
             client.print("<input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>");
             client.print("</div>");
             client.print("</div>");
-            client.print("<div class=\"offsets-container\">");
+            client.print("<button class=\"toggle-button\" onclick=\"toggleOffsets()\">⚙️</button>");
+            client.print("<div class=\"offsets-container hidden\">");
             client.print("<div>");
             client.print("<button onclick=\"sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))\">Set Offsets</button>");
             client.print("</div>");
@@ -340,6 +369,20 @@ void loop() {
             client.print("<input type='number' id='offset_5' placeholder='offset5' value='0.0'>");
             client.print("<label>Servo 6</label>");
             client.print("<input type='number' id='offset_6' placeholder='offset6' value='0.0'>");
+            client.print("</div>");
+            client.print("</div>");
+            client.print("<div class=\"accel-container hidden\">");
+            client.print("<div>");
+            client.print("<button onclick=\"sendRequest('/setMaxAccel', [");
+            client.print("document.getElementById('max_trans_accel'),");
+            client.print("document.getElementById('max_angular_accel')");
+            client.print("])\">Set Accelerations</button>");
+            client.print("</div>");
+            client.print("<div class=\"accel-grid\">");
+            client.print("<label>Translational</label>");
+            client.print("<input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>");
+            client.print("<label>Rotational</label>");
+            client.print("<input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>");
             client.print("</div>");
             client.print("</div>");
             client.print("</body>");
@@ -383,37 +426,10 @@ void loop() {
             }
           }
           controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
-          lastButtonPressed = "pose1";  // Update last button pressed
         }
         isProcessingRequest = false;
       }
-      if (completeRequest.startsWith("GET /pose2?params=")) {
-        // Only process if this wasn't the last pose button pressed
-        if (lastButtonPressed != "pose2") {
-          isProcessingRequest = true;
-          String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
-          if (params.indexOf("HTTP") > 0) {
-            params = params.substring(0, params.indexOf(" HTTP"));
-          }
-          if (params.indexOf(',') != -1) {
-            int values[6] = {0};
-            int index = 0;
-            while (params.length() > 0 && index < 6) {
-              int commaIndex = params.indexOf(',');
-              if (commaIndex == -1) {
-                values[index++] = params.toInt();
-                break;
-              } else {
-                values[index++] = params.substring(0, commaIndex).toInt();
-                params = params.substring(commaIndex + 1);
-              }
-            }
-            controller.setGoalPose(Pose(values[0], values[1], values[2], values[3], values[4], values[5]));
-            lastButtonPressed = "pose2";  // Update last button pressed
-          }
-          isProcessingRequest = false;
-        }
-      }
+
       if (completeRequest.startsWith("GET /setMaxAccel?params=")) {
         isProcessingRequest = true;
         String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
