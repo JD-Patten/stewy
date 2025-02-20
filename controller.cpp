@@ -1,16 +1,15 @@
 #include "controller.h"
 
-Controller::Controller(int servoPins[6], IKSolver ikSolver, float kp, float ki, float kd, float maxAcceleration, float maxAngularAcceleration)
-    : _kp(kp)
-    , _ki(ki)
-    , _kd(kd)
-    , _ikSolver(ikSolver)
+Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleration, float maxAngularAcceleration)
+    : _ikSolver(ikSolver)
     , _servoAngleOffsets(6, 0.0)
     , _servoAngleMin(-80.0)             //degrees
     , _servoAngleMax(80.0)              //degrees
-    , _maxAcceleration(100.0)            //mm/s^2
-    , _maxAngularAcceleration(100.0)     //degrees/s^2
-    , _plotCounter(0)
+    , _maxAcceleration(maxAcceleration)            
+    , _maxAngularAcceleration(maxAngularAcceleration)  
+    , _isWalking(false)
+    , _walkingDirection("no direction")   
+    , _walkingPattern(WalkingPatterns::z_motion(10, 1, 70))
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -32,17 +31,9 @@ void Controller::begin(const Pose& initialPose) {
     IKResult result = _ikSolver.solveInverseKinematics(initialPose);
 
     if (result.success) {
-        // initialize variables
         _goalPose = initialPose;
         _currentPose = initialPose;
-        _previousErrors = Pose(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        _integrals = Pose(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        _previousVelocity = Pose(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        _previousTime = millis();
-
-        // publish to servos    
         publishToServos(result.angles);
-
     } else {
         Serial.println("Failed to solve inverse kinematics");
     }
@@ -66,29 +57,26 @@ void Controller::publishToServos(const vector<float>& angles) {
     }
 }
 
-void Controller::calculatePIDControl() {
-    // calculate error
-    Pose error = _goalPose - _currentPose;
-    
-    // calculate integral
-    _integrals += error;
-    
-    // calculate derivative
-    Pose derivative = error - _previousErrors;
-    _previousErrors = error;
-    
-    // calculate output
-    Pose output = error * _kp + _integrals * _ki + derivative * _kd;
-    
-    // update current pose
-    _currentPose += output;
+void Controller::walk() {
+    float t = millis() / 1000.0f;
+
+    Pose pose = _walkingPattern.getPose(t);
+    _currentPose = pose;
+
+    if (_walkingDirection == "forward") {
+        Serial.println("walking forward");
+    } else if (_walkingDirection == "left") {
+        Serial.println("walking left");
+    } else if (_walkingDirection == "right") {
+        Serial.println("walking right");
+    } else {
+        Serial.println("invalid direction: " + _walkingDirection);
+    }
 }
 
 void Controller::follow_trajectory() {
-
     // get the current pose on the trajectory
     Pose currentPose = _trajectory.currentPoseOnTrajectory();
-
     // update the current pose
     _currentPose = currentPose;
 }
@@ -107,25 +95,38 @@ void Controller::set_trajectory(const Pose& currentPose, const Pose& goalPose) {
 }
 
 void Controller::update() {
-    // control
-    if (!_trajectory._isFinished) {
+    // if walking, update the current pose
+    if (_isWalking) {
+        walk();
+        IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
+        publishToServos(result.angles);
+        return;
+    }
+
+    // if the trajectory is not finished, follow it
+    if (!_trajectory._isFinished) {     //
         follow_trajectory();
-
-
-        // solve inverse kinematics
         IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
 
         if (result.success) {
             publishToServos(result.angles);
         }
     }
+
+    // if the trajectory is finished, publish the goal pose
     else {
         publishToServos(_ikSolver.solveInverseKinematics(_goalPose).angles);
     }
 }
+void Controller::startWalking(String direction) {
+    _isWalking = true;
+    _walkingDirection = direction;
+}
 
 void Controller::setGoalPose(const Pose& goalPose) {
     // check if the goal pose is different from the current pose
+    _isWalking = false;
+
     if (_goalPose == goalPose) {
         Serial.println("Goal pose is the same as the current pose");
         return;
@@ -143,7 +144,6 @@ void Controller::setGoalPose(const Pose& goalPose) {
     Serial.println("Goal pose set to: "); 
     Serial.println(goalPose.toString());
     set_trajectory(_currentPose, _goalPose);
-    
 }
 
 void Controller::setOffsets(vector<float> offsets) {
@@ -164,19 +164,6 @@ void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAc
     _maxAngularAcceleration = maxAngularAcceleration;
 
     Serial.println("Acceleration limits set to: " + String(maxAcceleration) + " mm/s^2 and " + String(maxAngularAcceleration) + " deg/s^2");
-}
-
-void Controller::setDampingFactor(float dampingFactor) {
-    _dampingFactor = dampingFactor;
-}
-
-Trajectory::Trajectory(Pose startPose, Pose goalPose, float duration)
-    : _startPose(startPose)
-    , _goalPose(goalPose)
-    , _duration(duration)
-    , _startTime(millis())
-    , _isFinished(false)
-{
 }
 
 Trajectory::Trajectory(Pose startPose, Pose goalPose, float maxAcceleration, float maxAngularAcceleration)
@@ -205,7 +192,6 @@ Pose Trajectory::currentPoseOnTrajectory() {
     float s = (3 * t*t / (_duration * _duration)) - 
               (2 * t*t*t / (_duration * _duration * _duration));
 
-
     // Clamp s between 0 and 1
     s = min(max(s, 0.0f), 1.0f);
 
@@ -216,7 +202,6 @@ float Trajectory::minimizeDuration(float maxAcceleration, float maxAngularAccele
     // minimize the duration of the trajectory
     // while keeping the max acceleration within the limit
     // reference Modern Robotics 9.2.1 p.330
-
 
     float translationalDistance = sqrt(pow(_goalPose.x - _startPose.x, 2) + 
                                       pow(_goalPose.y - _startPose.y, 2) + 

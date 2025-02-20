@@ -1,39 +1,37 @@
 import re
 
-def escape_quotes(text):
-    return text.replace('"', '\\"')
-
+def escape_special_chars(text):
+    """Escape special characters for Arduino client.print statements."""
+    return (text.replace('\\', '\\\\')  # Must escape backslashes first
+              .replace('"', '\\"')
+              .replace('${', '\\${')     # Escape template literal expressions
+    )
 def minify_js(js_content):
-    """Remove whitespace and newlines from JavaScript while preserving functionality."""
+    """Minify JavaScript while preserving functionality."""
     # Remove comments
     js_content = re.sub(r'//.*?\n|/\*.*?\*/', '', js_content, flags=re.DOTALL)
     
-    # Split on function boundaries to keep functions together
-    functions = js_content.split('function')
-    minified = []
+    # Preserve important whitespace around operators
+    js_content = re.sub(r'([=<>!+\-*/%&|^])\s+', r'\1', js_content)  # Remove space after operator
+    js_content = re.sub(r'\s+([=<>!+\-*/%&|^])', r'\1', js_content)  # Remove space before operator
     
-    for i, func in enumerate(functions):
-        if i == 0:  # First part might be empty or contain non-function code
-            if func.strip():
-                minified.append(func.strip())
-            continue
-            
-        # Reconstruct function and remove unnecessary whitespace
-        func = 'function' + func
-        func = ' '.join(func.split())  # Collapse whitespace
-        # Ensure proper spacing around arrow functions
-        func = func.replace('=>', ' => ')
-        # Remove spaces around special characters while preserving arrow functions
-        for char in ['{', '}', '(', ')', ',', ';', '=', '+', '-', '*', '/', ':', '?']:
-            if char != '=':  # Skip = to preserve =>
-                func = func.replace(f' {char} ', char)
-                func = func.replace(f' {char}', char)
-                func = func.replace(f'{char} ', char)
-        minified.append(func)
+    # Special handling for arrow functions
+    js_content = re.sub(r'\s*=>\s*', ' => ', js_content)  # Preserve spaces around =>
     
-    return ''.join(minified)
+    # Remove unnecessary whitespace while preserving needed spaces
+    lines = js_content.split('\n')
+    minified_lines = []
+    for line in lines:
+        line = line.strip()
+        if line:
+            # Collapse multiple spaces into single space
+            line = ' '.join(line.split())
+            minified_lines.append(line)
+    
+    return ' '.join(minified_lines)
 
 def process_file(filename):
+    """Read and process a file based on its type."""
     with open(filename, 'r') as file:
         content = file.read().strip()
         if filename.endswith('.js'):
@@ -48,22 +46,43 @@ def main():
 
     # Insert CSS and JS into HTML
     html_parts = html.split('</head>')
-    html_with_assets = html_parts[0] + f'''
-    <style>
-    {css}
-    </style>
-    <script>
-    ''' + js + '''
-    </script>
-    </head>''' + html_parts[1]
+    html_with_assets = (
+        html_parts[0] + 
+        f'\n<style>\n{css}\n</style>\n' +
+        f'<script>\n{js}\n</script>\n' +
+        '</head>' + 
+        html_parts[1]
+    )
 
     # Convert to client.print statements
     output_lines = []
+    current_line = ''
+    
     for line in html_with_assets.split('\n'):
         line = line.strip()
         if line:
-            escaped_line = escape_quotes(line)
-            output_lines.append(f'client.print("{escaped_line}");')
+            # Escape special characters
+            escaped_line = escape_special_chars(line)
+            
+            # Handle long lines by breaking them up
+            if len(escaped_line) > 120:  # Arduino has line length limits
+                if current_line:
+                    output_lines.append(f'client.print("{current_line}");')
+                    current_line = ''
+                output_lines.append(f'client.print("{escaped_line}");')
+            else:
+                if current_line:
+                    current_line += '\\n' + escaped_line
+                else:
+                    current_line = escaped_line
+                
+                if len(current_line) > 100:  # Write out accumulated line
+                    output_lines.append(f'client.print("{current_line}");')
+                    current_line = ''
+    
+    # Write any remaining content
+    if current_line:
+        output_lines.append(f'client.print("{current_line}");')
 
     # Write to output file
     with open('output.txt', 'w') as f:

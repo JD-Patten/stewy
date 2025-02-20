@@ -115,56 +115,57 @@ html, body {
     transform: rotate(0deg);
 }
 
-
-
-/* Keep original rotations without hover changes */
-.custom-hexagon-1 {
+/* Update the class names in the rotation styles */
+.walk-left {
     transform: rotate(60deg);
 }
 
-.custom-hexagon-2 {
+.walk-forward {
     transform: rotate(180deg);
 }
 
-.custom-hexagon-3 {
+.walk-right {
     transform: rotate(300deg);
 }
 
-/* Add these new hover states that combine scale with rotation */
-.custom-hexagon-1:hover {
+/* Update hover states with new class names */
+.walk-left:hover {
     transform: scale(1.03) rotate(60deg);
 }
 
-.custom-hexagon-2:hover {
+.walk-forward:hover {
     transform: scale(1.03) rotate(179.99deg);
 }
 
-.custom-hexagon-3:hover {
+.walk-right:hover {
     transform: scale(1.03) rotate(300deg);
 }
 
-/* Active states with fixed rotations */
-.custom-hexagon-1.active {
+/* Update active states with new class names */
+.walk-left.active {
     transform: rotate(60deg);
 }
 
-.custom-hexagon-2.active {
+.walk-forward.active {
     transform: rotate(180deg);
 }
 
-.custom-hexagon-3.active {
+.walk-right.active {
     transform: rotate(300deg);
 }
 
-/* Counter-rotate arrows to keep them pointing down */
-.custom-hexagon-1::after {
-    transform: rotate(0deg);
-}
-
-
-.custom-hexagon-3::after {
-    transform: rotate(-240deg);  /* Counter-rotate by negative angle */
-}
+/* Remove old class references */
+/* Delete or comment out:
+.custom-hexagon-1 { ... }
+.custom-hexagon-2 { ... }
+.custom-hexagon-3 { ... }
+.custom-hexagon-1:hover { ... }
+.custom-hexagon-2:hover { ... }
+.custom-hexagon-3:hover { ... }
+.custom-hexagon-1.active { ... }
+.custom-hexagon-2.active { ... }
+.custom-hexagon-3.active { ... }
+*/
 
 .pose-inputs {
     display: flex;

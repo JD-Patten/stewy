@@ -5,24 +5,22 @@
 #include <ESP32Servo.h>
 #include <vector>
 #include "inverse_kinematics.h"
-
+#include "walking_pattern.h"
 
 class Trajectory {
 private:
     Pose _startPose;
     Pose _goalPose;
     unsigned long _startTime;
-
     float minimizeDuration(float maxAcceleration, float maxAngularAcceleration);
 
 public:
     float _duration;
     bool _isFinished;
-    Pose pointAlongPath(float s);
     Trajectory() {}
-    Trajectory(Pose startPose, Pose goalPose, float duration);
     Trajectory(Pose startPose, Pose goalPose, float maxAcceleration, float maxAngularAcceleration);
     Pose currentPoseOnTrajectory();
+    Pose pointAlongPath(float s);
 };
 
 class Controller {
@@ -35,21 +33,14 @@ private:
     float _maxAcceleration;
     float _maxAngularAcceleration;
 
-    // controller parameters
-    float _kp, _ki, _kd;
-    Pose _integrals;
-    Pose _previousErrors;
-    Pose _previousVelocity;
-    float _dampingFactor;
-    unsigned long _previousTime;
-    int _plotCounter;
+    WalkingPattern _walkingPattern;
 
     // Inverse Kinematics solver
     IKSolver _ikSolver;
 
     // top plate poses
-    Pose _currentPose; // x, y, z, roll, pitch, yaw
-    Pose _goalPose;    // x, y, z, roll, pitch, yaw
+    Pose _currentPose;
+    Pose _goalPose;
 
     Trajectory _trajectory;
 
@@ -57,12 +48,16 @@ private:
     void follow_trajectory();
     void publishToServos(const vector<float>& angles);
     void set_trajectory(const Pose& currentPose, const Pose& goalPose);
+    void walk();
 
 public:
-    // Constructor
-    Controller(int servoPins[6], IKSolver ikSolver, float kp, float ki, float kd, float maxAcceleration, float maxAngularAcceleration);
+    bool _isWalking;
+    String _walkingDirection;
+
+    Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleration, float maxAngularAcceleration);
     void begin(const Pose& initialPose);
     void setGoalPose(const Pose& goalPose);
+    void startWalking(String direction);
     void setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration);
     void setDampingFactor(float dampingFactor);
     void setOffsets(vector<float> offsets);

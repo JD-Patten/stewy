@@ -9,9 +9,9 @@
 <body>
     <div class="walking-container">
         <div class="walking-buttons">
-            <button class="button custom-hexagon custom-hexagon-1"></button>
-            <button class="button custom-hexagon custom-hexagon-2"></button>
-            <button class="button custom-hexagon custom-hexagon-3"></button>
+            <button class="button custom-hexagon walk-left" onclick="sendRequest('/walk', [document.getElementById('speed_multiplier'), 'left'])"></button>
+            <button class="button custom-hexagon walk-forward" onclick="sendRequest('/walk', [document.getElementById('speed_multiplier'), 'forward'])"></button>
+            <button class="button custom-hexagon walk-right" onclick="sendRequest('/walk', [document.getElementById('speed_multiplier'), 'right'])"></button>
         </div>
         <div>
             <label>Speed Multiplier</label>
@@ -50,10 +50,17 @@
         </div>
     </div>
 
-    <button class="toggle-button" onclick="toggleOffsets()">⚙️</button>
+    <button class="toggle-button" onclick="toggleOffsets()">&#x2699;</button>
     <div class="offsets-container hidden">
         <div>
-            <button onclick="sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))">Set Offsets</button>
+            <button onclick="sendRequest('/setOffsets', [
+                document.getElementById('offset_1').value,
+                document.getElementById('offset_2').value,
+                document.getElementById('offset_3').value,
+                document.getElementById('offset_4').value,
+                document.getElementById('offset_5').value,
+                document.getElementById('offset_6').value
+            ])">Set Offsets</button>
         </div>
         <div class="offsets-grid">
             <label>Servo 1</label>

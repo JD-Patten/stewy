@@ -7,7 +7,7 @@
 #include <WiFiClient.h>
 #include <WiFiAP.h>
 
-#define LED_BUILTIN 13   // Set the GPIO pin where you connected your test LED or comment this line out if your dev board has a built-in LED
+#define LED_BUILTIN 48   
 
 // Set these to your desired credentials.
 const char *ssid = "stewyAP";
@@ -32,7 +32,9 @@ IKSolver ikSolver(
     -10     // topPlateZOffset
 );
 
-Controller controller(servoPins, ikSolver, 0, 0, 0, 10, 10 );  
+float maxAcceleration = 10;
+float maxRotationalAcceleration = 10;
+Controller controller(servoPins, ikSolver, maxAcceleration, maxRotationalAcceleration );  
 
 bool isProcessingRequest = false;  // Added to handle multiple requests
 
@@ -71,7 +73,7 @@ void setup() {
   // start the controller
   controller.setOffsets(servoOffsets);
   controller.begin(Pose(0, 0, 100, 0, 0, 0));
-  controller.setGoalPose(Pose(0, 0, 130, 0, 0, 0));
+  controller.setGoalPose(Pose(0, 0, 80, 0, 0, 0));
 }
 
 void loop() {
@@ -95,298 +97,71 @@ void loop() {
             client.println();
 
             // the content of the HTTP response follows the header:
-            client.print("<!DOCTYPE html>");
-            client.print("<html lang=\"en\">");
-            client.print("<head>");
-            client.print("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            client.print("<!-- CSS and JS will be injected here by the combine script -->");
-            client.print("<style>");
-            client.print("body {");
-            client.print("display: flex;");
-            client.print("flex-direction: row;");
-            client.print("justify-content: center;");
-            client.print("align-items: center;");
-            client.print("height: 100vh;");
-            client.print("margin: 0;");
-            client.print("font-size: 30px;");
-            client.print("text-align: center;");
-            client.print("gap: 100px;");
-            client.print("background-color: #0099a109;");
-            client.print("}");
-            client.print("label {");
-            client.print("font-size: 30px;");
-            client.print("color: #000;");
-            client.print("font-family: sans-serif;");
-            client.print("text-align: right;");
-            client.print("padding-right: 0px;");
-            client.print("padding-left: 0px;");
-            client.print("line-height: 45px; /* This helps align labels vertically with inputs */");
-            client.print("}");
-            client.print("button {");
-            client.print("width: 100%;");
-            client.print("padding: 20px;");
-            client.print("margin: 10px;");
-            client.print("background: #0099a1;");
-            client.print("color: rgb(255, 255, 255);");
-            client.print("border: none;");
-            client.print("border-radius: 10px;");
-            client.print("font-size: 50px;");
-            client.print("font-family: sans-serif;");
-            client.print("cursor: pointer;");
-            client.print("transition: all 0.3s ease;");
-            client.print("}");
-            client.print("button:hover {");
-            client.print("background: #0099a17f;");
-            client.print("transform: scale(1.02);");
-            client.print("}");
-            client.print("input {");
-            client.print("width: 120px;");
-            client.print("margin: 5px;");
-            client.print("font-size: 30px;");
-            client.print("font-family: sans-serif;");
-            client.print("background-color: #0099a121;");
-            client.print("color: #000;");
-            client.print("}");
-            client.print("html, body {");
-            client.print("margin: 0;");
-            client.print("padding: 0;");
-            client.print("width: 100%;");
-            client.print("height: 100%;");
-            client.print("overflow: hidden;");
-            client.print("}");
-            client.print(".container {");
-            client.print("width: 100%;");
-            client.print("height: 100%;");
-            client.print("display: flex;");
-            client.print("flex-direction: column;");
-            client.print("}");
-            client.print("/* Custom Hexagon Button */");
-            client.print(".button.custom-hexagon {");
-            client.print("width: 300px;");
-            client.print("aspect-ratio: 1;");
-            client.print("clip-path: polygon( 50%     50%,");
-            client.print("87.5%   71.65%,");
-            client.print("75%     93.3%,");
-            client.print("25%     93.3%,");
-            client.print("12.5%   71.65%);");
-            client.print("color: white;");
-            client.print("position: absolute;");
-            client.print("transform-origin: 50% 49%;");
-            client.print("display: flex;");
-            client.print("align-items: center;");
-            client.print("justify-content: center;");
-            client.print("border-radius: 15px;");
-            client.print("}");
-            client.print("/* Update the active state to combine with rotations */");
-            client.print(".button.custom-hexagon.active {");
-            client.print("transform: scale(0.95) rotate(60deg) !important;  /* For hexagon 1 */");
-            client.print("}");
-            client.print("/* Container for the rotating hexagons */");
-            client.print(".walking-buttons {");
-            client.print("position: relative;");
-            client.print("width: 300px;");
-            client.print("height: 300px;");
-            client.print("display: flex;");
-            client.print("justify-content: center;  /* Center horizontally */");
-            client.print("align-items: center;      /* Center vertically */");
-            client.print("}");
-            client.print(".walking-container {");
-            client.print("display: flex;");
-            client.print("flex-direction: column;");
-            client.print("align-items: center;");
-            client.print("justify-content: center;");
-            client.print("}");
-            client.print("/* Position the hexagons absolutely within container */");
-            client.print(".button.custom-hexagon::after {");
-            client.print("content:'\\2193';"); 
-            client.print("color: white;");
-            client.print("font-size: 80px;");
-            client.print("position: absolute;");
-            client.print("top: 170px;");
-            client.print("transform: rotate(0deg);");
-            client.print("}");
-            client.print("/* Keep original rotations without hover changes */");
-            client.print(".custom-hexagon-1 {");
-            client.print("transform: rotate(60deg);");
-            client.print("}");
-            client.print(".custom-hexagon-2 {");
-            client.print("transform: rotate(180deg);");
-            client.print("}");
-            client.print(".custom-hexagon-3 {");
-            client.print("transform: rotate(300deg);");
-            client.print("}");
-            client.print("/* Add these new hover states that combine scale with rotation */");
-            client.print(".custom-hexagon-1:hover {");
-            client.print("transform: scale(1.03) rotate(60deg);");
-            client.print("}");
-            client.print(".custom-hexagon-2:hover {");
-            client.print("transform: scale(1.03) rotate(179.99deg);");
-            client.print("}");
-            client.print(".custom-hexagon-3:hover {");
-            client.print("transform: scale(1.03) rotate(300deg);");
-            client.print("}");
-            client.print("/* Active states with fixed rotations */");
-            client.print(".custom-hexagon-1.active {");
-            client.print("transform: rotate(60deg);");
-            client.print("}");
-            client.print(".custom-hexagon-2.active {");
-            client.print("transform: rotate(180deg);");
-            client.print("}");
-            client.print(".custom-hexagon-3.active {");
-            client.print("transform: rotate(300deg);");
-            client.print("}");
-            client.print("/* Counter-rotate arrows to keep them pointing down */");
-            client.print(".custom-hexagon-1::after {");
-            client.print("transform: rotate(0deg);");
-            client.print("}");
-            client.print(".custom-hexagon-3::after {");
-            client.print("transform: rotate(-240deg);  /* Counter-rotate by negative angle */");
-            client.print("}");
-            client.print(".pose-inputs {");
-            client.print("display: flex;");
-            client.print("gap: 40px;");
-            client.print("justify-content: center;");
-            client.print("margin-top: 20px;");
-            client.print("}");
-            client.print(".pose-grid {");
-            client.print("display: grid;");
-            client.print("grid-template-columns: auto auto auto auto;");
-            client.print("gap: 20px;");
-            client.print("justify-content: center;");
-            client.print("margin-top: 20px;");
-            client.print("column-gap: 20px;");
-            client.print("}");
-            client.print(".pose-grid label {");
-            client.print("text-align: right;");
-            client.print("padding-right: 0px;");
-            client.print("padding-left: 20px;");
-            client.print("}");
-            client.print(".offsets-grid {");
-            client.print("display: grid;");
-            client.print("grid-template-columns: auto 100px;");
-            client.print("gap: 20px;");
-            client.print("justify-content: center;");
-            client.print("margin-top: 20px;");
-            client.print("}");
-            client.print("/* Add these new styles at the end of the file */");
-            client.print(".toggle-button {");
-            client.print("width: 90px;");
-            client.print("height: 90px;");
-            client.print("border-radius: 50%;");
-            client.print("background: #0099a1;");
-            client.print("color: white;");
-            client.print("font-size: 45px;");
-            client.print("padding: 0;");
-            client.print("margin: 10px;");
-            client.print("display: flex;");
-            client.print("align-items: center;");
-            client.print("justify-content: center;");
-            client.print("position: absolute;");
-            client.print("right: 20px;");
-            client.print("top: 20px;");
-            client.print("text-shadow: 0 0 20px rgb(255, 255, 255);  /* Added for better visibility */");
-            client.print("}");
-            client.print(".hidden {");
-            client.print("display: none;");
-            client.print("}");
-            client.print(".accel-grid {");
-            client.print("display: grid;");
-            client.print("grid-template-columns: auto 100px;");
-            client.print("gap: 20px;");
-            client.print("justify-content: center;");
-            client.print("margin-top: 20px;");
-            client.print("}");
-            client.print("</style>");
-            client.print("<script>");
-            client.print("function sendRequest(command,inputs){const params=Array.from(inputs).map(input=>input.value).join(',');fetch(`${command}?params=${params}`);}");
-
-            client.print("function toggleOffsets(){");
-            client.print("const settingsContainers=document.querySelectorAll('.offsets-container,.accel-container');");
-            client.print("const mainContainers=document.querySelectorAll('.walking-container,.pose-container');");
-            client.print("const settingsHidden=document.querySelector('.offsets-container').classList.contains('hidden');");
-            client.print("const toggleButton=document.querySelector('.toggle-button');");
-            client.print("toggleButton.textContent=settingsHidden?'\\u{1F3AE}':'\\u{2699}';");
-            client.print("settingsContainers.forEach(container=>{container.classList.toggle('hidden',!settingsHidden);});");
-            client.print("mainContainers.forEach(container=>{container.classList.toggle('hidden',settingsHidden);});");
-            client.print("}");
-            client.print("</script>");
-            client.print("</head>");
-            client.print("<body>");
-            client.print("<div class=\"walking-container\">");
-            client.print("<div class=\"walking-buttons\">");
-            client.print("<button class=\"button custom-hexagon custom-hexagon-1\"></button>");
-            client.print("<button class=\"button custom-hexagon custom-hexagon-2\"></button>");
-            client.print("<button class=\"button custom-hexagon custom-hexagon-3\"></button>");
-            client.print("</div>");
-            client.print("<div>");
-            client.print("<label>Speed Multiplier</label>");
-            client.print("</div>");
-            client.print("<div>");
-            client.print("<input type='number' id='speed_multiplier' placeholder='speed multiplier' value='1.0'>");
-            client.print("</div>");
-            client.print("</div>");
-            client.print("<div class=\"pose-container\">");
-            client.print("<div>");
-            client.print("<button onclick=\"sendRequest('/pose1', [");
-            client.print("document.getElementById('pose_x'),");
-            client.print("document.getElementById('pose_y'),");
-            client.print("document.getElementById('pose_z'),");
-            client.print("document.getElementById('pose_roll'),");
-            client.print("document.getElementById('pose_pitch'),");
-            client.print("document.getElementById('pose_yaw')");
-            client.print("])\">Set Pose</button>");
-            client.print("</div>");
-            client.print("<div class=\"pose-grid\">");
-            client.print("<label>X</label>");
-            client.print("<input type='number' id='pose_x' placeholder='X' value='0.0'>");
-            client.print("<label>Roll</label>");
-            client.print("<input type='number' id='pose_roll' placeholder='Roll' value='0.0'>");
-            client.print("<label>Y</label>");
-            client.print("<input type='number' id='pose_y' placeholder='Y' value='0.0'>");
-            client.print("<label>Pitch</label>");
-            client.print("<input type='number' id='pose_pitch' placeholder='Pitch' value='0.0'>");
-            client.print("<label>Z</label>");
-            client.print("<input type='number' id='pose_z' placeholder='Z' value='0.0'>");
-            client.print("<label>Yaw</label>");
-            client.print("<input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>");
-            client.print("</div>");
-            client.print("</div>");
-            client.print("<button class=\"toggle-button\" onclick=\"toggleOffsets()\">⚙️</button>");
-            client.print("<div class=\"offsets-container hidden\">");
-            client.print("<div>");
-            client.print("<button onclick=\"sendRequest('/setOffsets', document.querySelectorAll('#offset_1, #offset_2, #offset_3, #offset_4, #offset_5, #offset_6'))\">Set Offsets</button>");
-            client.print("</div>");
-            client.print("<div class=\"offsets-grid\">");
-            client.print("<label>Servo 1</label>");
-            client.print("<input type='number' id='offset_1' placeholder='offset1' value='0.0'>");
-            client.print("<label>Servo 2</label>");
-            client.print("<input type='number' id='offset_2' placeholder='offset2' value='0.0'>");
-            client.print("<label>Servo 3</label>");
-            client.print("<input type='number' id='offset_3' placeholder='offset3' value='0.0'>");
-            client.print("<label>Servo 4</label>");
-            client.print("<input type='number' id='offset_4' placeholder='offset4' value='0.0'>");
-            client.print("<label>Servo 5</label>");
-            client.print("<input type='number' id='offset_5' placeholder='offset5' value='0.0'>");
-            client.print("<label>Servo 6</label>");
-            client.print("<input type='number' id='offset_6' placeholder='offset6' value='0.0'>");
-            client.print("</div>");
-            client.print("</div>");
-            client.print("<div class=\"accel-container hidden\">");
-            client.print("<div>");
-            client.print("<button onclick=\"sendRequest('/setMaxAccel', [");
-            client.print("document.getElementById('max_trans_accel'),");
-            client.print("document.getElementById('max_angular_accel')");
-            client.print("])\">Set Accelerations</button>");
-            client.print("</div>");
-            client.print("<div class=\"accel-grid\">");
-            client.print("<label>Translational</label>");
-            client.print("<input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>");
-            client.print("<label>Rotational</label>");
-            client.print("<input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>");
-            client.print("</div>");
-            client.print("</div>");
-            client.print("</body>");
-            client.print("</html>");
+client.print("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+client.print("<!-- CSS and JS will be injected here by the combine script -->\n<link rel=\"stylesheet\" href=\"styles.css\">");
+client.print("<script src=\"script.js\"></script>\n<style>\nbody {\ndisplay: flex;\nflex-direction: row;\njustify-content: center;");
+client.print("align-items: center;\nheight: 100vh;\nmargin: 0;\nfont-size: 30px;\ntext-align: center;\ngap: 100px;\nbackground-color: #0099a109;");
+client.print("}\nlabel {\nfont-size: 30px;\ncolor: #000;\nfont-family: sans-serif;\ntext-align: right;\npadding-right: 0px;");
+client.print("padding-left: 0px;\nline-height: 45px; /* This helps align labels vertically with inputs */\n}\nbutton {");
+client.print("width: 100%;\npadding: 20px;\nmargin: 10px;\nbackground: #0099a1;\ncolor: rgb(255, 255, 255);\nborder: none;");
+client.print("border-radius: 10px;\nfont-size: 50px;\nfont-family: sans-serif;\ncursor: pointer;\ntransition: all 0.3s ease;");
+client.print("}\nbutton:hover {\nbackground: #0099a17f;\ntransform: scale(1.02);\n}\ninput {\nwidth: 120px;\nmargin: 5px;");
+client.print("font-size: 30px;\nfont-family: sans-serif;\nbackground-color: #0099a121;\ncolor: #000;\n}\nhtml, body {");
+client.print("margin: 0;\npadding: 0;\nwidth: 100%;\nheight: 100%;\noverflow: hidden;\n}\n.container {\nwidth: 100%;");
+client.print("height: 100%;\ndisplay: flex;\nflex-direction: column;\n}\n/* Custom Hexagon Button */\n.button.custom-hexagon {");
+client.print("width: 300px;\naspect-ratio: 1;\nclip-path: polygon( 50%     50%,\n87.5%   71.65%,\n75%     93.3%,\n25%     93.3%,");
+client.print("12.5%   71.65%);\ncolor: white;\nposition: absolute;\ntransform-origin: 50% 49%;\ndisplay: flex;\nalign-items: center;");
+client.print("justify-content: center;\nborder-radius: 15px;\n}\n/* Update the active state to combine with rotations */");
+client.print(".button.custom-hexagon.active {\ntransform: scale(0.95) rotate(60deg) !important;  /* For hexagon 1 */");
+client.print("}\n/* Container for the rotating hexagons */\n.walking-buttons {\nposition: relative;\nwidth: 300px;\nheight: 300px;");
+client.print("display: flex;\njustify-content: center;  /* Center horizontally */\nalign-items: center;      /* Center vertically */");
+client.print("}\n.walking-container {\ndisplay: flex;\nflex-direction: column;\nalign-items: center;\njustify-content: center;");
+client.print("}\n/* Position the hexagons absolutely within container */\n.button.custom-hexagon::after {\ncontent: '\\2193';  /* Unicode Down Arrow U+2193 */");
+client.print("color: white;\nfont-size: 80px;\nposition: absolute;\ntop: 170px;\ntransform: rotate(0deg);\n}\n/* Update the class names in the rotation styles */");
+client.print(".walk-left {\ntransform: rotate(60deg);\n}\n.walk-forward {\ntransform: rotate(180deg);\n}\n.walk-right {");
+client.print("transform: rotate(300deg);\n}\n/* Update hover states with new class names */\n.walk-left:hover {\ntransform: scale(1.03) rotate(60deg);");
+client.print("}\n.walk-forward:hover {\ntransform: scale(1.03) rotate(179.99deg);\n}\n.walk-right:hover {\ntransform: scale(1.03) rotate(300deg);");
+client.print("}\n/* Update active states with new class names */\n.walk-left.active {\ntransform: rotate(60deg);\n}");
+client.print(".walk-forward.active {\ntransform: rotate(180deg);\n}\n.walk-right.active {\ntransform: rotate(300deg);");
+client.print("}\n/* Remove old class references */\n/* Delete or comment out:\n.custom-hexagon-1 { ... }\n.custom-hexagon-2 { ... }");
+client.print(".custom-hexagon-3 { ... }\n.custom-hexagon-1:hover { ... }\n.custom-hexagon-2:hover { ... }\n.custom-hexagon-3:hover { ... }");
+client.print(".custom-hexagon-1.active { ... }\n.custom-hexagon-2.active { ... }\n.custom-hexagon-3.active { ... }\n*/");
+client.print(".pose-inputs {\ndisplay: flex;\ngap: 40px;\njustify-content: center;\nmargin-top: 20px;\n}\n.pose-grid {");
+client.print("display: grid;\ngrid-template-columns: auto auto auto auto;\ngap: 20px;\njustify-content: center;\nmargin-top: 20px;");
+client.print("column-gap: 20px;\n}\n.pose-grid label {\ntext-align: right;\npadding-right: 0px;\npadding-left: 20px;");
+client.print("}\n.offsets-grid {\ndisplay: grid;\ngrid-template-columns: auto 100px;\ngap: 20px;\njustify-content: center;");
+client.print("margin-top: 20px;\n}\n/* Add these new styles at the end of the file */\n.toggle-button {\nwidth: 90px;");
+client.print("height: 90px;\nborder-radius: 50%;\nbackground: #0099a1;\ncolor: white;\nfont-size: 45px;\npadding: 0;");
+client.print("margin: 10px;\ndisplay: flex;\nalign-items: center;\njustify-content: center;\nposition: absolute;\nright: 20px;");
+client.print("top: 20px;\ntext-shadow: 0 0 20px rgb(255, 255, 255);  /* Added for better visibility */\n}\n.hidden {");
+client.print("display: none;\n}\n.accel-grid {\ndisplay: grid;\ngrid-template-columns: auto 100px;\ngap: 20px;\njustify-content: center;");
+client.print("margin-top: 20px;\n}\n</style>\n<script>");
+client.print("function sendRequest(command, inputs) { const params=inputs.map(input => typeof input==='string' ? input : input.value).join(','); fetch(`\${command}?params=\${params}`); } function toggleOffsets() { const settingsContainers=document.querySelectorAll('.offsets-container, .accel-container'); const mainContainers=document.querySelectorAll('.walking-container, .pose-container'); const settingsHidden=document.querySelector('.offsets-container').classList.contains('hidden'); const toggleButton=document.querySelector('.toggle-button'); toggleButton.textContent=settingsHidden ? '\\u{1F3AE}' : '\\u{2699}'; settingsContainers.forEach(container => { container.classList.toggle('hidden',!settingsHidden); }); mainContainers.forEach(container => { container.classList.toggle('hidden', settingsHidden); }); }");
+client.print("</script>\n</head>\n<body>\n<div class=\"walking-container\">\n<div class=\"walking-buttons\">");
+client.print("<button class=\"button custom-hexagon walk-left\" onclick=\"sendRequest('/walk', [document.getElementById('speed_multiplier'), 'left'])\"></button>");
+client.print("<button class=\"button custom-hexagon walk-forward\" onclick=\"sendRequest('/walk', [document.getElementById('speed_multiplier'), 'forward'])\"></button>");
+client.print("<button class=\"button custom-hexagon walk-right\" onclick=\"sendRequest('/walk', [document.getElementById('speed_multiplier'), 'right'])\"></button>");
+client.print("</div>\n<div>\n<label>Speed Multiplier</label>\n</div>\n<div>\n<input type='number' id='speed_multiplier' placeholder='speed multiplier' value='1.0'>");
+client.print("</div>\n</div>\n<div class=\"pose-container\">\n<div>\n<button onclick=\"sendRequest('/pose1', [\ndocument.getElementById('pose_x'),");
+client.print("document.getElementById('pose_y'),\ndocument.getElementById('pose_z'),\ndocument.getElementById('pose_roll'),");
+client.print("document.getElementById('pose_pitch'),\ndocument.getElementById('pose_yaw')\n])\">Set Pose</button>\n</div>");
+client.print("<div class=\"pose-grid\">\n<label>X</label>\n<input type='number' id='pose_x' placeholder='X' value='0.0'>");
+client.print("<label>Roll</label>\n<input type='number' id='pose_roll' placeholder='Roll' value='0.0'>\n<label>Y</label>");
+client.print("<input type='number' id='pose_y' placeholder='Y' value='0.0'>\n<label>Pitch</label>\n<input type='number' id='pose_pitch' placeholder='Pitch' value='0.0'>");
+client.print("<label>Z</label>\n<input type='number' id='pose_z' placeholder='Z' value='0.0'>\n<label>Yaw</label>\n<input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>");
+client.print("</div>\n</div>\n<button class=\"toggle-button\" onclick=\"toggleOffsets()\">&#x2699;</button>\n<div class=\"offsets-container hidden\">");
+client.print("<div>\n<button onclick=\"sendRequest('/setOffsets', [\ndocument.getElementById('offset_1').value,\ndocument.getElementById('offset_2').value,");
+client.print("document.getElementById('offset_3').value,\ndocument.getElementById('offset_4').value,\ndocument.getElementById('offset_5').value,");
+client.print("document.getElementById('offset_6').value\n])\">Set Offsets</button>\n</div>\n<div class=\"offsets-grid\">");
+client.print("<label>Servo 1</label>\n<input type='number' id='offset_1' placeholder='offset1' value='0.0'>\n<label>Servo 2</label>");
+client.print("<input type='number' id='offset_2' placeholder='offset2' value='0.0'>\n<label>Servo 3</label>\n<input type='number' id='offset_3' placeholder='offset3' value='0.0'>");
+client.print("<label>Servo 4</label>\n<input type='number' id='offset_4' placeholder='offset4' value='0.0'>\n<label>Servo 5</label>");
+client.print("<input type='number' id='offset_5' placeholder='offset5' value='0.0'>\n<label>Servo 6</label>\n<input type='number' id='offset_6' placeholder='offset6' value='0.0'>");
+client.print("</div>\n</div>\n<div class=\"accel-container hidden\">\n<div>\n<button onclick=\"sendRequest('/setMaxAccel', [");
+client.print("document.getElementById('max_trans_accel'),\ndocument.getElementById('max_angular_accel')\n])\">Set Accelerations</button>");
+client.print("</div>\n<div class=\"accel-grid\">\n<label>Translational</label>\n<input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>");
+client.print("<label>Rotational</label>\n<input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>");
+client.print("</div>\n</div>\n</body>\n</html>");
 
             client.println();
             break;
@@ -404,8 +179,29 @@ void loop() {
 
     // Only process if we have a complete request
     if (!isProcessingRequest && requestComplete && completeRequest.length() > 0) {
+
+      if (completeRequest.startsWith("GET /walk?params=")) {
+        isProcessingRequest = true;
+        String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
+        if (params.indexOf("HTTP") > 0) {
+          params = params.substring(0, params.indexOf(" HTTP"));
+        }
+        
+        // Split the params into speed and direction
+        float speed = params.substring(0, params.indexOf(',')).toFloat();
+        String direction = params.substring(params.indexOf(',') + 1);
+        
+        Serial.print("Walk command received - Speed: ");
+        Serial.print(speed);
+        Serial.print(", Direction: ");
+        Serial.println(direction);
+
+        controller.startWalking(direction);
+        
+        isProcessingRequest = false;
+      }
+
       if (completeRequest.startsWith("GET /pose1?params=")) {
-        // Only process if this wasn't the last pose button pressed
 
         isProcessingRequest = true;
         String params = completeRequest.substring(completeRequest.indexOf('=') + 1);
@@ -465,6 +261,10 @@ void loop() {
         }
         isProcessingRequest = false;
       }
+
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(10);
+        digitalWrite(LED_BUILTIN, LOW);
     }
     client.stop();
   }

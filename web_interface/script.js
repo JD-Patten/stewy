@@ -1,5 +1,5 @@
 function sendRequest(command, inputs) {
-    const params = Array.from(inputs).map(input => input.value).join(',');
+    const params = inputs.map(input => typeof input === 'string' ? input : input.value).join(',');
     fetch(`${command}?params=${params}`);
 }
 
@@ -13,7 +13,7 @@ function toggleOffsets() {
     
     // Update the button icon
     const toggleButton = document.querySelector('.toggle-button');
-    toggleButton.textContent = settingsHidden ? '\u{2699}' : '\u{1F3AE}';
+    toggleButton.textContent = settingsHidden ? '\u{1F3AE}' :  '\u{2699}';
     
     // Show settings and hide main containers, or vice versa
     settingsContainers.forEach(container => {
