@@ -20,7 +20,7 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     // attach servos with proper configuration
     for (int i = 0; i < 6; i++) {
         _servos[i].setPeriodHertz(50);    // Standard 50hz servo
-        _servos[i].attach(servoPins[i], 600, 2400);  // Attach servo with min/max pulse widths
+        _servos[i].attach(servoPins[i], 500, 2500);  // Attach servo with min/max pulse widths
     }
 }
         
@@ -52,7 +52,7 @@ void Controller::publishToServos(const vector<float>& angles) {
         
         // Convert back to publishing direction
         float publishAngle = (i % 2 == 0) ? -constrainedAngle : constrainedAngle;
-        
+        //Serial.println("publishing angle number " + String(i) + " : " + String(publishAngle));
         _servos[i].write(publishAngle + 90);
     }
 }

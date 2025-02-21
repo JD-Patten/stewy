@@ -49,7 +49,7 @@ vector<Matrix3d> IKSolver::initializeServoRotations(float draftAngle) {
     vector<float> zAngles = {-120, -120, 0, 0, 120, 120}; // rotate servo to correct side
     vector<float> xAngles = {0, -180, 0, -180, 0, -180};   // flip every other servo 
 
-    vector<Matrix3d> servoRotations;
+    vector<Matrix3d> servoRotations;\
     for (int i = 0; i < 6; ++i) {
         Matrix3d rotation =
             AngleAxisd(xAngles[i] * M_PI / 180.0, Vector3d::UnitX()).toRotationMatrix() *
@@ -79,7 +79,8 @@ IKResult IKSolver::solveInverseKinematics(const Pose& pose) {
     // Solve inverse kinematics for each arm
     for (int i = 0; i < 6; ++i) {
         // Step 1: Apply rotation and translation to end effector connection point
-        Vector3d endConnectionPoint = rotationMatrix * _topPlateArmConnections[i] + Vector3d(pose.x, pose.y, pose.z);
+        Vector3d endConnectionPoint = rotationMatrix * _topPlateArmConnections[i];
+        endConnectionPoint = endConnectionPoint + Vector3d(pose.x, pose.y, pose.z);
 
         // Step 2: Transform point to servo frame
         Vector3d pointInServoFrame = _servoRotations[i] * (endConnectionPoint - _servoTranslations[i]);

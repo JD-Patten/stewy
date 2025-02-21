@@ -23,13 +23,13 @@ vector<float> servoOffsets = {4, 0, 0, 5, 0, -3};
 IKSolver ikSolver(
     50,     // servoArmLength
     100,    // arm2Length
-    15.5,     // servoOffset1
-    70,     // servoOffset2
-    0,      // servoZOffset
+    73,     // servoOffset1
+    15.5,   // servoOffset2
+    20,     // servoZOffset
     15,     // draftAngle
-    20,     // topPlateOffset1
-    35,     // topPlateOffset2
-    -10     // topPlateZOffset
+    35,     // topPlateOffset1
+    20,     // topPlateOffset2
+    -15     // topPlateZOffset
 );
 
 float maxAcceleration = 10;
@@ -72,8 +72,8 @@ void setup() {
 
   // start the controller
   controller.setOffsets(servoOffsets);
-  controller.begin(Pose(0, 0, 100, 0, 0, 0));
-  controller.setGoalPose(Pose(0, 0, 80, 0, 0, 0));
+  controller.begin(Pose(0, 0, 130, 0, 0, 0));
+  controller.setGoalPose(Pose(0, 0, 110, 0, 0, 0));
 }
 
 void loop() {
