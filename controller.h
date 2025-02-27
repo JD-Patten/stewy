@@ -34,6 +34,7 @@ private:
     float _maxAngularAcceleration;
 
     WalkingPattern _walkingPattern;
+    
 
     // Inverse Kinematics solver
     IKSolver _ikSolver;
@@ -53,11 +54,12 @@ private:
 public:
     bool _isWalking;
     String _walkingDirection;
+    float _speedMultiplier;
 
     Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleration, float maxAngularAcceleration);
     void begin(const Pose& initialPose);
     void setGoalPose(const Pose& goalPose);
-    void startWalking(String direction);
+    void startWalking(String direction, float speedMultiplier);
     void setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration);
     void setDampingFactor(float dampingFactor);
     void setOffsets(vector<float> offsets);

@@ -25,11 +25,11 @@ IKSolver ikSolver(
     100,    // arm2Length
     73,     // servoOffset1
     15.5,   // servoOffset2
-    20,     // servoZOffset
+    0,     // servoZOffset
     15,     // draftAngle
     35,     // topPlateOffset1
     20,     // topPlateOffset2
-    -15     // topPlateZOffset
+    -10     // topPlateZOffset
 );
 
 float maxAcceleration = 10;
@@ -135,8 +135,13 @@ client.print("height: 90px;\nborder-radius: 50%;\nbackground: #0099a1;\ncolor: w
 client.print("margin: 10px;\ndisplay: flex;\nalign-items: center;\njustify-content: center;\nposition: absolute;\nright: 20px;");
 client.print("top: 20px;\ntext-shadow: 0 0 20px rgb(255, 255, 255);  /* Added for better visibility */\n}\n.hidden {");
 client.print("display: none;\n}\n.accel-grid {\ndisplay: grid;\ngrid-template-columns: auto 100px;\ngap: 20px;\njustify-content: center;");
-client.print("margin-top: 20px;\n}\n</style>\n<script>");
-client.print("function sendRequest(command, inputs) { const params=inputs.map(input => typeof input==='string' ? input : input.value).join(','); fetch(`\${command}?params=\${params}`); } function toggleOffsets() { const settingsContainers=document.querySelectorAll('.offsets-container, .accel-container'); const mainContainers=document.querySelectorAll('.walking-container, .pose-container'); const settingsHidden=document.querySelector('.offsets-container').classList.contains('hidden'); const toggleButton=document.querySelector('.toggle-button'); toggleButton.textContent=settingsHidden ? '\\u{1F3AE}' : '\\u{2699}'; settingsContainers.forEach(container => { container.classList.toggle('hidden',!settingsHidden); }); mainContainers.forEach(container => { container.classList.toggle('hidden', settingsHidden); }); }");
+client.print("margin-top: 20px;\n}\n.pose-grid-container {\nwidth: 100%;\npadding: 20px;\nbox-sizing: border-box;\n}");
+client.print(".pose-grid-table {\ndisplay: flex;\nflex-direction: column;\ngap: 10px;\nwidth: 100%;\nmax-width: 1200px;");
+client.print("margin: 0 auto;\n}\n.grid-row {\ndisplay: grid;\ngrid-template-columns: repeat(7, 1fr);\ngap: 10px;\nalign-items: center;");
+client.print("}\n.grid-row.header {\nfont-weight: bold;\ntext-align: center;\n}\n.grid-row input {\nwidth: 100%;\nbox-sizing: border-box;");
+client.print("}\n.grid-row button {\nwidth: 100%;\npadding: 10px;\nfont-size: 24px;\n}\n.pose-input {\nwidth: 100%;");
+client.print("padding: 5px;\nfont-size: 20px;\n}\n</style>\n<script>");
+client.print("function sendRequest(command, inputs) { const params=inputs.map(input => typeof input==='string' ? input : input.value).join(','); fetch(`\${command}?params=\${params}`); } function toggleOffsets() { const settingsContainers=document.querySelectorAll('.offsets-container, .accel-container'); const controlContainers=document.querySelectorAll('.walking-container, .pose-container'); const poseGridContainer=document.querySelector('.pose-grid-container'); const toggleButton=document.querySelector('.toggle-button'); const currentIcon=toggleButton.textContent; if (currentIcon==='\\u{2699}') { settingsContainers.forEach(container => container.classList.remove('hidden')); controlContainers.forEach(container => container.classList.add('hidden')); poseGridContainer.classList.add('hidden'); toggleButton.textContent='\\u{1F3AE}'; } else if (currentIcon==='\\u{1F3AE}') { settingsContainers.forEach(container => container.classList.add('hidden')); controlContainers.forEach(container => container.classList.add('hidden')); poseGridContainer.classList.remove('hidden'); toggleButton.textContent='\\u{1F4C4}'; } else { settingsContainers.forEach(container => container.classList.add('hidden')); controlContainers.forEach(container => container.classList.remove('hidden')); poseGridContainer.classList.add('hidden'); toggleButton.textContent='\\u{2699}'; } }");
 client.print("</script>\n</head>\n<body>\n<div class=\"walking-container\">\n<div class=\"walking-buttons\">");
 client.print("<button class=\"button custom-hexagon walk-left\" onclick=\"sendRequest('/walk', [document.getElementById('speed_multiplier'), 'left'])\"></button>");
 client.print("<button class=\"button custom-hexagon walk-forward\" onclick=\"sendRequest('/walk', [document.getElementById('speed_multiplier'), 'forward'])\"></button>");
@@ -161,7 +166,33 @@ client.print("</div>\n</div>\n<div class=\"accel-container hidden\">\n<div>\n<bu
 client.print("document.getElementById('max_trans_accel'),\ndocument.getElementById('max_angular_accel')\n])\">Set Accelerations</button>");
 client.print("</div>\n<div class=\"accel-grid\">\n<label>Translational</label>\n<input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>");
 client.print("<label>Rotational</label>\n<input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>");
-client.print("</div>\n</div>\n</body>\n</html>");
+client.print("</div>\n</div>\n<div class=\"pose-grid-container hidden\">\n<div class=\"pose-grid-table\">\n<div class=\"grid-row header\">");
+client.print("<div>X</div>\n<div>Y</div>\n<div>Z</div>\n<div>Roll</div>\n<div>Pitch</div>\n<div>Yaw</div>\n<div></div>");
+client.print("</div>\n<div class=\"grid-row\">\n<input type=\"number\" class=\"pose-input\" id=\"pose1_x\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose1_y\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose1_z\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose1_roll\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose1_pitch\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose1_yaw\" value=\"0.0\">\n<button onclick=\"sendRequest('/pose1', [");
+client.print("document.getElementById('pose1_x'),\ndocument.getElementById('pose1_y'),\ndocument.getElementById('pose1_z'),");
+client.print("document.getElementById('pose1_roll'),\ndocument.getElementById('pose1_pitch'),\ndocument.getElementById('pose1_yaw')");
+client.print("])\">Set</button>\n</div>\n<div class=\"grid-row\">\n<input type=\"number\" class=\"pose-input\" id=\"pose2_x\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose2_y\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose2_z\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose2_roll\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose2_pitch\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose2_yaw\" value=\"0.0\">\n<button onclick=\"sendRequest('/pose1', [");
+client.print("document.getElementById('pose2_x'),\ndocument.getElementById('pose2_y'),\ndocument.getElementById('pose2_z'),");
+client.print("document.getElementById('pose2_roll'),\ndocument.getElementById('pose2_pitch'),\ndocument.getElementById('pose2_yaw')");
+client.print("])\">Set</button>\n</div>\n<div class=\"grid-row\">\n<input type=\"number\" class=\"pose-input\" id=\"pose3_x\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose3_y\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose3_z\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose3_roll\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose3_pitch\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose3_yaw\" value=\"0.0\">\n<button onclick=\"sendRequest('/pose1', [");
+client.print("document.getElementById('pose3_x'),\ndocument.getElementById('pose3_y'),\ndocument.getElementById('pose3_z'),");
+client.print("document.getElementById('pose3_roll'),\ndocument.getElementById('pose3_pitch'),\ndocument.getElementById('pose3_yaw')");
+client.print("])\">Set</button>\n</div>\n<div class=\"grid-row\">\n<input type=\"number\" class=\"pose-input\" id=\"pose4_x\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose4_y\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose4_z\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose4_roll\" value=\"0.0\">\n<input type=\"number\" class=\"pose-input\" id=\"pose4_pitch\" value=\"0.0\">");
+client.print("<input type=\"number\" class=\"pose-input\" id=\"pose4_yaw\" value=\"0.0\">\n<button onclick=\"sendRequest('/pose1', [");
+client.print("document.getElementById('pose4_x'),\ndocument.getElementById('pose4_y'),\ndocument.getElementById('pose4_z'),");
+client.print("document.getElementById('pose4_roll'),\ndocument.getElementById('pose4_pitch'),\ndocument.getElementById('pose4_yaw')");
+client.print("])\">Set</button>\n</div>\n</div>\n</div>\n</body>\n</html>");
 
             client.println();
             break;
@@ -196,7 +227,7 @@ client.print("</div>\n</div>\n</body>\n</html>");
         Serial.print(", Direction: ");
         Serial.println(direction);
 
-        controller.startWalking(direction);
+        controller.startWalking(direction, speed);
         
         isProcessingRequest = false;
       }

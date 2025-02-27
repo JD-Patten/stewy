@@ -9,7 +9,8 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     , _maxAngularAcceleration(maxAngularAcceleration)  
     , _isWalking(false)
     , _walkingDirection("no direction")   
-    , _walkingPattern(WalkingPatterns::z_motion(10, 1, 70))
+    , _walkingPattern(WalkingPatterns::wp1())
+    , _speedMultiplier(1.0)
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -58,19 +59,24 @@ void Controller::publishToServos(const vector<float>& angles) {
 }
 
 void Controller::walk() {
+
+    // get the current time in seconds
     float t = millis() / 1000.0f;
+
+    // add in the speed multiplier
+    t = t * _speedMultiplier;
 
     Pose pose = _walkingPattern.getPose(t);
     _currentPose = pose;
 
     if (_walkingDirection == "forward") {
-        Serial.println("walking forward");
+        return;
     } else if (_walkingDirection == "left") {
-        Serial.println("walking left");
+        return;
     } else if (_walkingDirection == "right") {
-        Serial.println("walking right");
+        return;
     } else {
-        Serial.println("invalid direction: " + _walkingDirection);
+        return;
     }
 }
 
@@ -118,9 +124,10 @@ void Controller::update() {
         publishToServos(_ikSolver.solveInverseKinematics(_goalPose).angles);
     }
 }
-void Controller::startWalking(String direction) {
+void Controller::startWalking(String direction, float speedMultiplier) {
     _isWalking = true;
     _walkingDirection = direction;
+    _speedMultiplier = speedMultiplier;
 }
 
 void Controller::setGoalPose(const Pose& goalPose) {
