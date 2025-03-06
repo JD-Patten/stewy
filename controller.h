@@ -65,6 +65,7 @@ public:
     void setOffsets(vector<float> offsets);
     void setAngleLimits(float min, float max);
     void update();
+    vector<float> getServoAngles();
 };
 
 #endif 

@@ -60,21 +60,129 @@ void Controller::publishToServos(const vector<float>& angles) {
 
 void Controller::walk() {
 
+    //TODO: right now this function is hardcoded for the wp1 walkign pattern. 
+    //      it should be refactored so that the walkign pattern class just returns
+    //      the angles based on the walking speed and direction.
+    //      Each walking pattern should hold the IK parameters it was trained on 
+    //      or just store it's info in servo angle data. that way different walking patterns
+    //      can be used on robots with different dimensions.
+
+
     // get the current time in seconds
     float t = millis() / 1000.0f;
 
     // add in the speed multiplier
     t = t * _speedMultiplier;
 
-    Pose pose = _walkingPattern.getPose(t);
-    _currentPose = pose;
+    // temporary for testing a portion of the cycle
+    float walkingDuration = 0.5;
+    float transitionDuration = .1;
+    float fullcycleDuration = 2 * (walkingDuration + transitionDuration);
+    float timeInCycle = fmod(t, fullcycleDuration);
 
-    if (_walkingDirection == "forward") {
+    std::vector<float> angles;
+    
+    if (timeInCycle < walkingDuration) {        // UNMIRRORED WALKING PHASE
+
+        Pose pose = _walkingPattern.getPose(timeInCycle);
+        IKResult result = _ikSolver.solveInverseKinematics(pose);
+
+        // use the angles if the ik solver was successful
+        if (result.success) {
+            angles = result.angles;
+        } else {
+            Serial.println("Failed to solve inverse kinematics for walking pattern");
+            return;
+        }
+
+    } else if (timeInCycle < walkingDuration + transitionDuration) {   // FIRST TRANSITION PHASE
+
+        // linear interpolation between the last servo angles and the first mirrored servo angles
+        std::vector<float> startingAngles = _ikSolver.solveInverseKinematics(_walkingPattern.getPose(walkingDuration)).angles;
+        std::vector<float> endingAnglesUnmirrored = _ikSolver.solveInverseKinematics(_walkingPattern.getPose(0)).angles;
+        std::vector<float> endingAngles = {
+            -endingAnglesUnmirrored[3],
+            -endingAnglesUnmirrored[2],
+            -endingAnglesUnmirrored[1],
+            -endingAnglesUnmirrored[0],
+            -endingAnglesUnmirrored[5],
+            -endingAnglesUnmirrored[4]
+        };
+
+        float timeInTransition = timeInCycle - walkingDuration;
+        vector<float> interpolatedAngles;
+        for (int i = 0; i < 6; i++) {
+            float interpolatedAngle = startingAngles[i] + (endingAngles[i] - startingAngles[i]) * timeInTransition / transitionDuration;
+            interpolatedAngles.push_back(interpolatedAngle);
+        }
+    
+        angles = interpolatedAngles;
+
+    } else if (timeInCycle < walkingDuration + transitionDuration + walkingDuration) {  // MIRRORED WALKING PHASE
+        
+        t = timeInCycle - (walkingDuration + transitionDuration);
+        Pose pose = _walkingPattern.getPose(t);
+        IKResult result = _ikSolver.solveInverseKinematics(pose);
+
+        // mirror the angles and use them if the ik solver was successful
+        if (result.success) {
+            angles = {-result.angles[3],
+                     -result.angles[2],
+                     -result.angles[1],
+                     -result.angles[0],
+                     -result.angles[5],
+                     -result.angles[4]};
+        } else {
+            Serial.println("Failed to solve inverse kinematics for walking pattern");
+            return;
+        }
+    } else {        // SECOND TRANSITION PHASE
+
+        // linear interpolation between the last mirrored servo angles and the first servo angles
+        float timeInTransition = timeInCycle - (walkingDuration + transitionDuration + walkingDuration);
+
+        std::vector<float> startingAnglesUnmirrored = _ikSolver.solveInverseKinematics(_walkingPattern.getPose(walkingDuration)).angles;
+        std::vector<float> endingAngles = _ikSolver.solveInverseKinematics(_walkingPattern.getPose(0)).angles;
+
+        std::vector<float> startingAngles = {
+            -startingAnglesUnmirrored[3],
+            -startingAnglesUnmirrored[2],
+            -startingAnglesUnmirrored[1],
+            -startingAnglesUnmirrored[0],
+            -startingAnglesUnmirrored[5],
+            -startingAnglesUnmirrored[4]
+        };
+
+        std::vector<float> interpolatedAngles;
+        for (int i = 0; i < 6; i++) {
+            float interpolatedAngle = startingAngles[i] + (endingAngles[i] - startingAngles[i]) * timeInTransition / transitionDuration;
+            interpolatedAngles.push_back(interpolatedAngle);
+        }
+        angles = interpolatedAngles;
+    }
+
+    // rearrange the angles for the walking direction and publish them
+
+    if (_walkingDirection == "right") {
+        publishToServos(angles);
+        return;
+    } else if (_walkingDirection == "forward") {
+        // rearrange the angles for left walking (go from 1,2,3,4,5,6 to 3,4,5,6,1,2)
+        publishToServos({angles[2],
+                         angles[3],
+                         angles[4],
+                         angles[5],
+                         angles[0],
+                         angles[1]});
         return;
     } else if (_walkingDirection == "left") {
-        return;
-    } else if (_walkingDirection == "right") {
-        return;
+        // rearrange the angles for right walking (go from 1,2,3,4,5,6 to 5,6,1,2,3,4)
+        publishToServos({angles[4],
+                         angles[5],
+                         angles[0],
+                         angles[1],
+                         angles[2],
+                         angles[3]});
     } else {
         return;
     }
@@ -104,8 +212,6 @@ void Controller::update() {
     // if walking, update the current pose
     if (_isWalking) {
         walk();
-        IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
-        publishToServos(result.angles);
         return;
     }
 
@@ -171,6 +277,22 @@ void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAc
     _maxAngularAcceleration = maxAngularAcceleration;
 
     Serial.println("Acceleration limits set to: " + String(maxAcceleration) + " mm/s^2 and " + String(maxAngularAcceleration) + " deg/s^2");
+}
+
+vector<float> Controller::getServoAngles() {
+    vector<float> angles;
+    for (int i = 0; i < 6; i++) {
+        float rawAngle = (_servos[i].read() - 90);  // Convert from 0-180 to ±90 range
+        
+        // Even servos (0,2,4): Add offset
+        // Odd servos (1,3,5): Subtract offset
+        float angleWithoutOffset = (i % 2 == 0) ? 
+            rawAngle + _servoAngleOffsets[i] :  // For even servos
+            rawAngle - _servoAngleOffsets[i];     // For odd servos
+            
+        angles.push_back(angleWithoutOffset);
+    }
+    return angles;
 }
 
 Trajectory::Trajectory(Pose startPose, Pose goalPose, float maxAcceleration, float maxAngularAcceleration)
