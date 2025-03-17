@@ -62,7 +62,7 @@ vector<Matrix3d> IKSolver::initializeServoRotations(float draftAngle) {
 }
 
 // Function to solve inverse kinematics
-IKResult IKSolver::solveInverseKinematics(const Pose& pose) {
+IKResult IKSolver::solveInverseKinematics(const Pose& pose) const {
     vector<float> servoAngles(6, 0.0);
 
     // Convert roll, pitch, and yaw to radians

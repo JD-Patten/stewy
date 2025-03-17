@@ -25,37 +25,21 @@ struct sin_wave {
     }
 };
 
-class WalkingPattern {
-private:
-    sin_wave _x;
-    sin_wave _y;
-    sin_wave _z;
-    sin_wave _roll;
-    sin_wave _pitch;
-    sin_wave _yaw;
-    
-public:
-    WalkingPattern(sin_wave x, sin_wave y, sin_wave z, 
-                   sin_wave roll, sin_wave pitch, sin_wave yaw) :
-        _x(x), _y(y), _z(z), _roll(roll), _pitch(pitch), _yaw(yaw) {}
-
-    Pose getPose(float time) const;  
+class WalkingPattern1{
+    private:
+        sin_wave _x;
+        sin_wave _y;
+        sin_wave _z;
+        sin_wave _roll;
+        sin_wave _pitch;
+        sin_wave _yaw;
+        IKSolver _ikSolver;
+        
+        Pose getPose(float time) const;
+    public:
+        WalkingPattern1();
+        vector<float> getAngles(float time, String direction, float speed) const;
 };
-
-namespace WalkingPatterns {
-    WalkingPattern z_motion(float amplitude, float period, float position);
-    
-    inline WalkingPattern wp1() {
-        return WalkingPattern(
-            sin_wave(10.952f, 1.0f, 11.508f, 0.54f),    // x
-            sin_wave(10.476f, 2.0f, -9.921f, 0.365f),   // y
-            sin_wave(25.238f, 1.0f, 89.206f, 0.476f),   // z
-            sin_wave(19.048f, 1.0f, -4.048f, 0.603f),   // roll
-            sin_wave(2.54f, 1.0f, 0.714f, 0.286f),      // pitch
-            sin_wave(3.81f, 1.0f, -13.095f, 0.952f)     // yaw
-        );
-    }
-} // namespace WalkingPatterns
 
 #endif
 

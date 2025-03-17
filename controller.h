@@ -33,8 +33,8 @@ private:
     float _maxAcceleration;
     float _maxAngularAcceleration;
 
-    WalkingPattern _walkingPattern;
-    
+    WalkingPattern1 _walkingPattern;
+    float _walkingStartTime;
 
     // Inverse Kinematics solver
     IKSolver _ikSolver;
@@ -60,6 +60,7 @@ public:
     void begin(const Pose& initialPose);
     void setGoalPose(const Pose& goalPose);
     void startWalking(String direction, float speedMultiplier);
+    vector<float> _walkingStartAngles;
     void setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration);
     void setDampingFactor(float dampingFactor);
     void setOffsets(vector<float> offsets);

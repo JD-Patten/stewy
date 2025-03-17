@@ -1,8 +1,8 @@
 #include "inverse_kinematics.h"
 #include "controller.h"
-#include <ESP32Servo.h>
-#include <ESPmDNS.h>  // Include the mDNS library
 
+#include <ESP32Servo.h>
+#include <ESPmDNS.h> 
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiAP.h>
@@ -17,7 +17,7 @@ WiFiServer server(80);
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-vector<float> servoOffsets = {3, -2, 5, -5, 5, 0};
+vector<float> servoOffsets = {5, -3, 2, -2, 8, 6}; // plastic gear offsets
 
 // Create IK solver instance
 IKSolver ikSolver(
@@ -27,7 +27,7 @@ IKSolver ikSolver(
     15.5,   // servoOffset2
     0,     // servoZOffset
     15,     // draftAngle
-    35,     // topPlateOffset1
+    40,     // topPlateOffset1
     20,     // topPlateOffset2
     -10     // topPlateZOffset
 );

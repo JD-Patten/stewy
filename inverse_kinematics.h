@@ -176,7 +176,7 @@ public:
 
 
     // Compute servo angles based on desired end-effector position and orientation
-    IKResult solveInverseKinematics(const Pose& pose);
+    IKResult solveInverseKinematics(const Pose& pose) const;
 };
 
 #endif // INVERSE_KINEMATICS_H
