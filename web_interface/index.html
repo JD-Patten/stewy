@@ -99,5 +99,83 @@
         </div>
     </div>
 
+    <div class="pose-grid-container hidden">
+        <div class="pose-grid-table">
+            <div class="grid-row header">
+                <div>X</div>
+                <div>Y</div>
+                <div>Z</div>
+                <div>Roll</div>
+                <div>Pitch</div>
+                <div>Yaw</div>
+                <div></div>
+            </div>
+            <div class="grid-row">
+                <input type="number" class="pose-input" id="pose1_x" value="0.0">
+                <input type="number" class="pose-input" id="pose1_y" value="0.0">
+                <input type="number" class="pose-input" id="pose1_z" value="0.0">
+                <input type="number" class="pose-input" id="pose1_roll" value="0.0">
+                <input type="number" class="pose-input" id="pose1_pitch" value="0.0">
+                <input type="number" class="pose-input" id="pose1_yaw" value="0.0">
+                <button onclick="sendRequest('/pose1', [
+                    document.getElementById('pose1_x'),
+                    document.getElementById('pose1_y'),
+                    document.getElementById('pose1_z'),
+                    document.getElementById('pose1_roll'),
+                    document.getElementById('pose1_pitch'),
+                    document.getElementById('pose1_yaw')
+                ])">Set</button>
+            </div>
+            <div class="grid-row">
+                <input type="number" class="pose-input" id="pose2_x" value="0.0">
+                <input type="number" class="pose-input" id="pose2_y" value="0.0">
+                <input type="number" class="pose-input" id="pose2_z" value="0.0">
+                <input type="number" class="pose-input" id="pose2_roll" value="0.0">
+                <input type="number" class="pose-input" id="pose2_pitch" value="0.0">
+                <input type="number" class="pose-input" id="pose2_yaw" value="0.0">
+                <button onclick="sendRequest('/pose1', [
+                    document.getElementById('pose2_x'),
+                    document.getElementById('pose2_y'),
+                    document.getElementById('pose2_z'),
+                    document.getElementById('pose2_roll'),
+                    document.getElementById('pose2_pitch'),
+                    document.getElementById('pose2_yaw')
+                ])">Set</button>
+            </div>
+            <div class="grid-row">
+                <input type="number" class="pose-input" id="pose3_x" value="0.0">
+                <input type="number" class="pose-input" id="pose3_y" value="0.0">
+                <input type="number" class="pose-input" id="pose3_z" value="0.0">
+                <input type="number" class="pose-input" id="pose3_roll" value="0.0">
+                <input type="number" class="pose-input" id="pose3_pitch" value="0.0">
+                <input type="number" class="pose-input" id="pose3_yaw" value="0.0">
+                <button onclick="sendRequest('/pose1', [
+                    document.getElementById('pose3_x'),
+                    document.getElementById('pose3_y'),
+                    document.getElementById('pose3_z'),
+                    document.getElementById('pose3_roll'),
+                    document.getElementById('pose3_pitch'),
+                    document.getElementById('pose3_yaw')
+                ])">Set</button>
+            </div>
+            <div class="grid-row">
+                <input type="number" class="pose-input" id="pose4_x" value="0.0">
+                <input type="number" class="pose-input" id="pose4_y" value="0.0">
+                <input type="number" class="pose-input" id="pose4_z" value="0.0">
+                <input type="number" class="pose-input" id="pose4_roll" value="0.0">
+                <input type="number" class="pose-input" id="pose4_pitch" value="0.0">
+                <input type="number" class="pose-input" id="pose4_yaw" value="0.0">
+                <button onclick="sendRequest('/pose1', [
+                    document.getElementById('pose4_x'),
+                    document.getElementById('pose4_y'),
+                    document.getElementById('pose4_z'),
+                    document.getElementById('pose4_roll'),
+                    document.getElementById('pose4_pitch'),
+                    document.getElementById('pose4_yaw')
+                ])">Set</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html> 

@@ -6,21 +6,31 @@ function sendRequest(command, inputs) {
 function toggleOffsets() {
     // Get all containers
     const settingsContainers = document.querySelectorAll('.offsets-container, .accel-container');
-    const mainContainers = document.querySelectorAll('.walking-container, .pose-container');
+    const controlContainers = document.querySelectorAll('.walking-container, .pose-container');
+    const poseGridContainer = document.querySelector('.pose-grid-container');
     
-    // Check if settings are currently hidden
-    const settingsHidden = document.querySelector('.offsets-container').classList.contains('hidden');
-    
-    // Update the button icon
+    // Get current state from button icon
     const toggleButton = document.querySelector('.toggle-button');
-    toggleButton.textContent = settingsHidden ? '\u{1F3AE}' :  '\u{2699}';
+    const currentIcon = toggleButton.textContent;
     
-    // Show settings and hide main containers, or vice versa
-    settingsContainers.forEach(container => {
-        container.classList.toggle('hidden', !settingsHidden);
-    });
-    
-    mainContainers.forEach(container => {
-        container.classList.toggle('hidden', settingsHidden);
-    });
+    // Cycle between states
+    if (currentIcon === '\u{2699}') {  // If showing gear (controls)
+        // Show settings
+        settingsContainers.forEach(container => container.classList.remove('hidden'));
+        controlContainers.forEach(container => container.classList.add('hidden'));
+        poseGridContainer.classList.add('hidden');
+        toggleButton.textContent = '\u{1F3AE}';  // Game controller icon
+    } else if (currentIcon === '\u{1F3AE}') {  // If showing game controller (settings)
+        // Show pose grid
+        settingsContainers.forEach(container => container.classList.add('hidden'));
+        controlContainers.forEach(container => container.classList.add('hidden'));
+        poseGridContainer.classList.remove('hidden');
+        toggleButton.textContent = '\u{1F4C4}';  // Page icon
+    } else {  // If showing page (pose grid)
+        // Show controls
+        settingsContainers.forEach(container => container.classList.add('hidden'));
+        controlContainers.forEach(container => container.classList.remove('hidden'));
+        poseGridContainer.classList.add('hidden');
+        toggleButton.textContent = '\u{2699}';  // Gear icon
+    }
 }

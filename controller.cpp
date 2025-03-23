@@ -11,6 +11,7 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     , _walkingDirection("no direction")   
     , _walkingPattern(WalkingPattern1())
     , _speedMultiplier(1.0)
+    , _lastCommandedAngles(6, 0.0)  // Initialize with zeros
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -41,6 +42,8 @@ void Controller::begin(const Pose& initialPose) {
 }
 
 void Controller::publishToServos(const vector<float>& angles) {
+    // Debug print for angles being sent to servos
+    
     for (int i = 0; i < 6; i++) {
         // For odd servos, check limits on positive value but publish negative
         float checkAngle = (i % 2 == 0) ? -angles[i] : angles[i];
@@ -53,7 +56,10 @@ void Controller::publishToServos(const vector<float>& angles) {
         
         // Convert back to publishing direction
         float publishAngle = (i % 2 == 0) ? -constrainedAngle : constrainedAngle;
-        //Serial.println("publishing angle number " + String(i) + " : " + String(publishAngle));
+
+        // Store the commanded angle (without the 90 degree offset)
+        _lastCommandedAngles[i] = angles[i];
+        
         _servos[i].write(publishAngle + 90);
     }
 }
@@ -118,22 +124,38 @@ void Controller::update() {
 
     // if the trajectory is finished, publish the goal pose
     else {
-        publishToServos(_ikSolver.solveInverseKinematics(_goalPose).angles);
+        // Get current servo angles - now directly use _lastCommandedAngles
+        _currentPose = _goalPose;
+        vector<float> currentAngles = _lastCommandedAngles;
+    
+        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_goalPose).angles;
+        
+
+        // Interpolate between current angles and goal angles
+        // Move 1% closer to the goal angle each time
+        vector<float> interpolatedAngles(6);
+        for (int i = 0; i < 6; i++) {
+            interpolatedAngles[i] = currentAngles[i] + 0.005 * (goalAngles[i] - currentAngles[i]);
+        }
+        
+        publishToServos(interpolatedAngles);
     }
 }
 void Controller::startWalking(String direction, float speedMultiplier) {
+    _currentPose = Pose(0, 0, 0, 0, 0, 0);
+    _trajectory._isFinished = true;
     _isWalking = true;
     _walkingDirection = direction;
     _speedMultiplier = speedMultiplier;
     _walkingStartTime = millis() / 1000.0f;
-    _walkingStartAngles = getServoAngles();
+    _walkingStartAngles = _lastCommandedAngles; 
 }
 
 void Controller::setGoalPose(const Pose& goalPose) {
     // check if the goal pose is different from the current pose
     _isWalking = false;
 
-    if (_goalPose == goalPose) {
+    if (_currentPose == goalPose) {
         Serial.println("Goal pose is the same as the current pose");
         return;
     }
@@ -149,7 +171,16 @@ void Controller::setGoalPose(const Pose& goalPose) {
     _goalPose = goalPose; // update goal pose   
     Serial.println("Goal pose set to: "); 
     Serial.println(goalPose.toString());
-    set_trajectory(_currentPose, _goalPose);
+
+    // check if the current pose is valid by solving the IK for it
+    IKResult currentPoseResult = _ikSolver.solveInverseKinematics(_currentPose);
+
+    if (currentPoseResult.success) {
+        // if the current pose is valid, then set a trajectory
+        set_trajectory(_currentPose, _goalPose);
+    } else {
+        Serial.println("Current pose is invalid, cannot create trajectory");
+    }
 }
 
 void Controller::setOffsets(vector<float> offsets) {
@@ -170,22 +201,6 @@ void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAc
     _maxAngularAcceleration = maxAngularAcceleration;
 
     Serial.println("Acceleration limits set to: " + String(maxAcceleration) + " mm/s^2 and " + String(maxAngularAcceleration) + " deg/s^2");
-}
-
-vector<float> Controller::getServoAngles() {
-    vector<float> angles;
-    for (int i = 0; i < 6; i++) {
-        float rawAngle = (_servos[i].read() - 90);  // Convert from 0-180 to ±90 range
-        
-        // Even servos (0,2,4): Add offset
-        // Odd servos (1,3,5): Subtract offset
-        float angleWithoutOffset = (i % 2 == 0) ? 
-            rawAngle + _servoAngleOffsets[i] :  // For even servos
-            rawAngle - _servoAngleOffsets[i];     // For odd servos
-            
-        angles.push_back(angleWithoutOffset);
-    }
-    return angles;
 }
 
 Trajectory::Trajectory(Pose startPose, Pose goalPose, float maxAcceleration, float maxAngularAcceleration)

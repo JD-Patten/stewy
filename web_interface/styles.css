@@ -230,3 +230,47 @@ html, body {
     margin-top: 20px;
 }
 
+.pose-grid-container {
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.pose-grid-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.grid-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    align-items: center;
+}
+
+.grid-row.header {
+    font-weight: bold;
+    text-align: center;
+}
+
+.grid-row input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.grid-row button {
+    width: 100%;
+    padding: 10px;
+    font-size: 24px;
+}
+
+.pose-input {
+    width: 100%;
+    padding: 5px;
+    font-size: 20px;
+}
+

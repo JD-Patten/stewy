@@ -17,7 +17,9 @@ WiFiServer server(80);
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-vector<float> servoOffsets = {5, -3, 2, -2, 8, 6}; // plastic gear offsets
+// vector<float> servoOffsets = {5, -3, 2, -2, 8, 6}; // plastic gear offsets
+vector<float> servoOffsets = {0, -2, 7, -4, 4, 0};  // metal gear offsets
+
 
 // Create IK solver instance
 IKSolver ikSolver(

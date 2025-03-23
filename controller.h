@@ -61,6 +61,7 @@ public:
     void setGoalPose(const Pose& goalPose);
     void startWalking(String direction, float speedMultiplier);
     vector<float> _walkingStartAngles;
+    vector<float> _lastCommandedAngles;
     void setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration);
     void setDampingFactor(float dampingFactor);
     void setOffsets(vector<float> offsets);
