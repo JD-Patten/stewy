@@ -70,6 +70,66 @@ struct Pose {
     Pose(float x = 0, float y = 0, float z = 0, float roll = 0, float pitch = 0, float yaw = 0)
         : x(x), y(y), z(z), roll(roll), pitch(pitch), yaw(yaw) {}
 
+    // construct from a comma-separated String "x,y,z,roll,pitch,yaw"
+    Pose(const String &s) {
+        // initialize to zeros first
+        x = y = z = roll = pitch = yaw = 0.0f;
+        // attempt to parse; ignore return value here (keeps zeros on failure)
+        fromString(s);
+    }
+
+    // Parse a string and set this Pose. Returns true on success (exactly 6 numbers parsed).
+    bool fromString(const String &s) {
+        // local copy so we can trim/modify
+        String in = s;
+        // remove leading/trailing spaces:
+        auto trim = [](String &str) {
+            // trim left
+            while (str.length() && isspace((unsigned char)str.charAt(0))) str = str.substring(1);
+            // trim right
+            while (str.length() && isspace((unsigned char)str.charAt(str.length() - 1))) str = str.substring(0, str.length() - 1);
+        };
+
+        trim(in);
+
+        float vals[6] = {0,0,0,0,0,0};
+        int lastIndex = 0;
+        int commaIndex;
+        int count = 0;
+
+        while (count < 6) {
+            commaIndex = in.indexOf(',', lastIndex);
+            String token;
+            if (commaIndex == -1) {
+                token = in.substring(lastIndex);
+            } else {
+                token = in.substring(lastIndex, commaIndex);
+            }
+            trim(token);                       // remove spaces around number
+            if (token.length() == 0) return false; // empty token -> fail
+
+            // convert to float
+            vals[count] = token.toFloat();
+
+            count++;
+            if (commaIndex == -1) break; // no more commas
+            lastIndex = commaIndex + 1;
+        }
+
+        // must have parsed exactly 6 numbers and no trailing junk
+        if (count != 6) return false;
+
+        // success: assign
+        x = vals[0];
+        y = vals[1];
+        z = vals[2];
+        roll = vals[3];
+        pitch = vals[4];
+        yaw = vals[5];
+        return true;
+    }
+
+
     // Subtraction operator
     Pose operator-(const Pose& other) const {
         return Pose(
