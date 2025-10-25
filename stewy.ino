@@ -68,10 +68,7 @@ void udpPacketHandler(const JoystickPacket& pkt) {
     Serial.print(" Clicked: "); Serial.print(pkt.clicked);
     Serial.print(" Distance: "); Serial.println(pkt.distance);
 
-    // Update controller state with joystick values
-    controller._state.joyX = pkt.joyX;
-    controller._state.joyY = pkt.joyY;
-    controller._state.joyClick = pkt.clicked != 0; // assuming clicked is 0 or 1
+    controller.updateSensorState(pkt.distance, pkt.joyX, pkt.joyY, pkt.clicked);
 }
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);

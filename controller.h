@@ -7,27 +7,6 @@
 #include "inverse_kinematics.h"
 #include "walking_pattern.h"
 
-struct State {
-    bool poseKnown = false;
-
-    float position[3]        = {0.0f, 0.0f, 0.0f};   // x, y, z
-    float orientation[3]     = {0.0f, 0.0f, 0.0f};   // roll, pitch, yaw
-    float linearVelocity[3]  = {0.0f, 0.0f, 0.0f};   // vx, vy, vz
-    float angularVelocity[3] = {0.0f, 0.0f, 0.0f};   // v_roll, v_pitch, v_yaw
-
-    float servoAngles[6]     = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    float servoVelocities[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-    float distanceSensor = 0.0f;   // distance sensor reading
-    float joyX = 0.0f;             // joystick X position
-    float joyY = 0.0f;             // joystick Y position
-    bool joyClick = false;         // joystick button state
-
-    // optional constructor (not even needed now, but allowed)
-    State() = default;
-};
-
-
 class Trajectory {
 private:
     Pose _startPose;
@@ -54,13 +33,12 @@ private:
     float _maxAcceleration;
     float _maxAngularAcceleration;
 
-    
-
     //sensors
     float _distance;
     float _joyX;
     float _joyY;
     bool _joyClick;
+    bool _prevJoyClick;
 
     WalkingPattern1 _walkingPattern;
     float _walkingStartTime;
@@ -84,10 +62,10 @@ public:
     bool _isWalking;
     String _walkingDirection;
     float _speedMultiplier;
-    State _state;
 
     Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleration, float maxAngularAcceleration);
     void begin(const Pose& initialPose);
+    void updateSensorState(float distance, float joyX, float joyY, bool joyClick);
     void setGoalPose(const Pose& goalPose);
     void startWalking(String direction, float speedMultiplier);
     vector<float> _walkingStartAngles;

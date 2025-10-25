@@ -64,6 +64,28 @@ void Controller::publishToServos(const vector<float>& angles) {
     }
 }
 
+void Controller::updateSensorState(float distance, float joyX, float joyY, bool joyClick) {
+    _distance = distance;
+    _joyX = joyX;
+    _joyY = joyY;
+    _prevJoyClick = _joyClick;
+    _joyClick = joyClick;
+
+
+    // -- Test to see if this is working --
+    // Detect rising edge of joystick click
+    if (_joyClick && !_prevJoyClick) {
+        // Toggle walking state on click
+        if (_isWalking) {
+            _isWalking = false;
+            Serial.println("Stopping walking.");
+        } else {
+            startWalking("forward", .50);  // Example: start walking forward at normal speed
+            Serial.println("Starting walking.");
+        }
+    }
+}
+
 void Controller::walk() {
 
 
@@ -106,6 +128,7 @@ void Controller::set_trajectory(const Pose& currentPose, const Pose& goalPose) {
 }
 
 void Controller::update() {
+
     // if walking, update the current pose
     if (_isWalking) {
         walk();
