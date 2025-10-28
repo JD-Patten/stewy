@@ -7,6 +7,14 @@
 #include "inverse_kinematics.h"
 #include "walking_pattern.h"
 
+enum ControlMode {
+    STANDARD,
+    JOYSTICK_X,
+    JOYSTICK_Y,
+    JOYSTICK_Z,
+    JOYSTICK_WALK
+};
+
 class Trajectory {
 private:
     Pose _startPose;
@@ -50,6 +58,8 @@ private:
     Pose _currentPose;
     Pose _goalPose;
 
+    Pose _goalVelocity;
+
     Trajectory _trajectory;
 
     void calculatePIDControl();
@@ -62,10 +72,11 @@ public:
     bool _isWalking;
     String _walkingDirection;
     float _speedMultiplier;
+    ControlMode _currentMode;
 
     Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleration, float maxAngularAcceleration);
     void begin(const Pose& initialPose);
-    void updateSensorState(float distance, float joyX, float joyY, bool joyClick);
+    void updateSensorState(float raw_distance, float raw_joyX, float raw_joyY, bool raw_joyClick);
     void setGoalPose(const Pose& goalPose);
     void startWalking(String direction, float speedMultiplier);
     vector<float> _walkingStartAngles;
@@ -76,6 +87,7 @@ public:
     void setAngleLimits(float min, float max);
     void update();
     vector<float> getServoAngles();
+    String getModeString();
 };
 
-#endif 
+#endif

@@ -63,10 +63,10 @@ void httpCommandHandler(const String& path, const String& params) {
 
 void udpPacketHandler(const JoystickPacket& pkt) {
     // Example: just print the received joystick packet
-    Serial.print("UDP Packet - JoyX: "); Serial.print(pkt.joyX);
-    Serial.print(" JoyY: "); Serial.print(pkt.joyY);
-    Serial.print(" Clicked: "); Serial.print(pkt.clicked);
-    Serial.print(" Distance: "); Serial.println(pkt.distance);
+    //Serial.print("UDP Packet - JoyX: "); Serial.print(pkt.joyX);
+    //Serial.print(" JoyY: "); Serial.print(pkt.joyY);
+    //Serial.print(" Clicked: "); Serial.print(pkt.clicked);
+    //Serial.print(" Distance: "); Serial.println(pkt.distance);
 
     controller.updateSensorState(pkt.distance, pkt.joyX, pkt.joyY, pkt.clicked);
 }

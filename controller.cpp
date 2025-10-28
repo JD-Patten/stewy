@@ -5,13 +5,14 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     , _servoAngleOffsets(6, 0.0)
     , _servoAngleMin(-80.0)             //degrees
     , _servoAngleMax(80.0)              //degrees
-    , _maxAcceleration(maxAcceleration)            
-    , _maxAngularAcceleration(maxAngularAcceleration)  
+    , _maxAcceleration(maxAcceleration)
+    , _maxAngularAcceleration(maxAngularAcceleration)
     , _isWalking(false)
-    , _walkingDirection("no direction")   
+    , _walkingDirection("no direction")
     , _walkingPattern(WalkingPattern1())
     , _speedMultiplier(1.0)
-    , _lastCommandedAngles(6, 0.0)  // Initialize with zeros
+    , _lastCommandedAngles(6, 0.0)
+    , _currentMode(STANDARD)
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -64,39 +65,107 @@ void Controller::publishToServos(const vector<float>& angles) {
     }
 }
 
-void Controller::updateSensorState(float distance, float joyX, float joyY, bool joyClick) {
-    _distance = distance;
-    _joyX = joyX;
-    _joyY = joyY;
+void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw_joyY, bool raw_joyClick) {
+    // update internal sensor states
     _prevJoyClick = _joyClick;
-    _joyClick = joyClick;
+    _joyClick = raw_joyClick;
+    _distance = raw_distance;
+
+    // recenter joystick values and apply deadzone
+    float xCenter = 2160;
+    float yCenter = 2200;
+    float deadzone = 25;
+
+    _joyX = raw_joyX - xCenter;
+    if (abs(_joyX) < deadzone) _joyX = 0;
+    _joyY = raw_joyY - yCenter;
+    if (abs(_joyY) < deadzone) _joyY = 0;
 
 
-    // -- Test to see if this is working --
-    // Detect rising edge of joystick click
+    float magnitude = sqrt(_joyX * _joyX + _joyY * _joyY);
+    if (magnitude > 2000) magnitude = 2000;
+
+
+    // unit vectors for seelcting a direction based on joystick position
+    // left and right are back left and back right faces of the robot
+    vector<pair<String, pair<float, float>>> directions = {
+        {"forward", {0 , 1.0}},
+        {"left", {0.866025, -0.5}},
+        {"right", {-0.866025, -0.5}},
+        {"backward", {0 , -1.0}},
+        {"forward left", {0.866025, 0.5}},
+        {"forward right", {-0.866025, 0.5}}
+    };
+
+    // if the joystick was just clicked change the "mode" of the robot
     if (_joyClick && !_prevJoyClick) {
-        // Toggle walking state on click
-        if (_isWalking) {
-            _isWalking = false;
-            Serial.println("Stopping walking.");
+        _currentMode = static_cast<ControlMode>((_currentMode + 1) % 5);
+        Serial.println("Control mode: " + getModeString());
+    }
+
+    float largestDot = 0.0;
+    bool flipDirection = false;
+    String newWalkingDirection = "none";
+    // use the dot product to determine which direction to walk in
+    for (auto& dir : directions) {
+        float dot = (_joyX * dir.second.first + _joyY * dir.second.second);
+
+        if (dot > largestDot) {
+            if (dir.first == "backward") {
+                newWalkingDirection = "forward";
+                flipDirection = true;
+            } else if (dir.first == "forward left") {
+                newWalkingDirection = "right";
+                flipDirection = true;
+            } else if (dir.first == "forward right") {
+                newWalkingDirection = "left";
+                flipDirection = true;
+            } else {
+                newWalkingDirection = dir.first;
+            }
+            largestDot = dot;
+            }
+        }
+
+
+    Serial.println("Largest dot: " + String(largestDot) + " Direction: " + String(newWalkingDirection.c_str()));
+    
+
+    // if in walking mode, send walk command based on joystick position
+    if (_currentMode == JOYSTICK_WALK) {
+
+        // now set walking
+        if (magnitude > 0) {
+            float velocity = largestDot * 1.0 / 2000.0;
+            if (flipDirection == true) velocity *= -1.0;
+
+            if (_isWalking && _walkingDirection == newWalkingDirection) {
+                // already walking in this direction just update the speed
+                _walkingDirection = newWalkingDirection;
+                _speedMultiplier = velocity;
+            } else{
+                _walkingDirection = newWalkingDirection;
+                _speedMultiplier = velocity;
+                startWalking(_walkingDirection, _speedMultiplier);
+                Serial.println("Started walking " + String(_walkingDirection) + " with speed multiplier: " + String(_speedMultiplier));
+            }
         } else {
-            startWalking("forward", .50);  // Example: start walking forward at normal speed
-            Serial.println("Starting walking.");
+            _isWalking = false;
         }
     }
 }
 
 void Controller::walk() {
 
-
-    // get the current time in seconds
-    float t = millis() / 1000.0f;
-
     // get the angles for the walking pattern   
-    vector<float> angles = _walkingPattern.getAngles(t, _walkingDirection, _speedMultiplier);
+    vector<float> angles = _walkingPattern.getAngles(_walkingDirection, _speedMultiplier);
 
     // fade in to transition into the walking pattern
-    float fadeInDuration = 0.2 / _speedMultiplier;
+    float speed = _speedMultiplier;
+    if (speed < 0.0) speed *= -1.0;
+
+    float fadeInDuration = 0.2 / speed;
+    float t = millis() / 1000.0f;
     float timeSinceWalkingStarted = t - _walkingStartTime;
     float fadeInPercent = min(timeSinceWalkingStarted / fadeInDuration, 1.0f);
     for (int i = 0; i < 6; i++) {
@@ -136,7 +205,7 @@ void Controller::update() {
     }
 
     // if the trajectory is not finished, follow it
-    if (!_trajectory._isFinished) {     //
+    if (!_trajectory._isFinished) {     
         follow_trajectory();
         IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
 
@@ -172,6 +241,8 @@ void Controller::startWalking(String direction, float speedMultiplier) {
     _speedMultiplier = speedMultiplier;
     _walkingStartTime = millis() / 1000.0f;
     _walkingStartAngles = _lastCommandedAngles; 
+    _walkingPattern._previousTime = millis() / 1000.0f;
+    _walkingPattern._previousTimeInCycle = 0.0;
 }
 
 void Controller::setGoalPose(const Pose& goalPose) {
@@ -286,4 +357,21 @@ Pose Trajectory::pointAlongPath(float s) {
 
     // get the position along the path
     return _startPose + s * (_goalPose - _startPose);
+}
+
+String Controller::getModeString() {
+    switch (_currentMode) {
+        case STANDARD:
+            return "STANDARD";
+        case JOYSTICK_X:
+            return "JOYSTICK_X";
+        case JOYSTICK_Y:
+            return "JOYSTICK_Y";
+        case JOYSTICK_Z:
+            return "JOYSTICK_Z";
+        case JOYSTICK_WALK:
+            return "JOYSTICK_WALK";
+        default:
+            return "UNKNOWN";
+    }
 }

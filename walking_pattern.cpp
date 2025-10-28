@@ -23,20 +23,32 @@ Pose WalkingPattern1::getPose(float time) const {
     return Pose{x, y, z, roll, pitch, yaw};
 }
 
-vector<float> WalkingPattern1::getAngles(float time, String direction, float speed) const {
+vector<float> WalkingPattern1::getAngles(String direction, float speed) const {
+
+    // Negate speed because genetic algorithm pattern moves backward by default
+    speed = -speed;
 
     // this walking pattern get's it's movement from a set of sin waves found in the Genetic Algorithm
     // Only a section of the sin waves are used to create the walking pattern, the parts that do most of the work moving the robot
     // This movement is mirrored every other cycle to keep the movement symetrical, and keep the robot walking straight
 
-    
-    time = time * speed;
+    // tracks the current time and time in cycle separately and increment's them based on speed
+    // this allows for speeed changes without messing up the walking cycle
+    float currentTime = millis() / 1000.0f;
+    float newTime = _previousTimeInCycle + speed * (currentTime - _previousTime);
+    _previousTime = currentTime;
 
-    // get the time in the cycle
     float walkingDuration = 0.5;             // amount of time from the sin waves that we're using in this walking pattern
-    float transitionDuration = .1;           // amount of time to transition between the mirrored parts
-    float fullcycleDuration = 2 * (walkingDuration + transitionDuration); // account for the time of the mirrored parts
-    float timeInCycle = fmod(time, fullcycleDuration); 
+    float transitionDuration = .1;           // amount of time to transition between the mirrored parts    
+    float fullcycleDuration = 2 * (walkingDuration + transitionDuration);
+
+    newTime = fmod(newTime, fullcycleDuration);
+
+    // ensure newTime is positive this handles negative speeds
+    if (newTime < 0) newTime += fullcycleDuration;
+
+    float timeInCycle = newTime;
+    _previousTimeInCycle = timeInCycle;
 
     std::vector<float> angles;
     

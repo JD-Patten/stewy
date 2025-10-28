@@ -34,13 +34,15 @@ class WalkingPattern1{
         sin_wave _pitch;
         sin_wave _yaw;
         IKSolver _ikSolver;
-        
+
+
         Pose getPose(float time) const;
     public:
+
         WalkingPattern1();
-        vector<float> getAngles(float time, String direction, float speed) const;
+        mutable float _previousTime;
+        mutable float _previousTimeInCycle;
+        vector<float> getAngles(String direction, float speed) const;
 };
 
 #endif
-
-
