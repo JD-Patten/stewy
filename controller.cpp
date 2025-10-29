@@ -13,6 +13,8 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     , _speedMultiplier(1.0)
     , _lastCommandedAngles(6, 0.0)
     , _currentMode(STANDARD)
+    , _inVelocityMode(false)
+    , _lastSensorTime(millis())
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -24,6 +26,10 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     for (int i = 0; i < 6; i++) {
         _servos[i].setPeriodHertz(50);    // Standard 50hz servo
         _servos[i].attach(servoPins[i], 500, 2500);  // Attach servo with min/max pulse widths
+    }
+
+    for (int i = 0; i < 6; i++) {
+        _integratedOffsets[i] = 0.0f;
     }
 }
         
@@ -103,6 +109,13 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
         Serial.println("Control mode: " + getModeString());
     }
 
+    // Set velocity mode based on current mode
+    if (_currentMode == JOYSTICK_X || _currentMode == JOYSTICK_Y || _currentMode == JOYSTICK_Z) {
+        _inVelocityMode = true;
+    } else {
+        _inVelocityMode = false;
+    }
+
     float largestDot = 0.0;
     bool flipDirection = false;
     String newWalkingDirection = "none";
@@ -128,9 +141,6 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
         }
 
 
-    Serial.println("Largest dot: " + String(largestDot) + " Direction: " + String(newWalkingDirection.c_str()));
-    
-
     // if in walking mode, send walk command based on joystick position
     if (_currentMode == JOYSTICK_WALK) {
 
@@ -151,6 +161,57 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             }
         } else {
             _isWalking = false;
+        }
+    }
+
+
+    // Print-only basic integration test for JOYSTICK_X/Y/Z modes
+    if (_inVelocityMode && _trajectory._isFinished) {
+        unsigned long now = millis();
+        float dt = (now - _lastSensorTime) / 1000.0f;
+        _lastSensorTime = now;
+
+        if (dt > 0.0f) {
+            // Tuning constants
+            const float joy_max = 2000.0f;
+            const float max_trans_vel = 50.0f;  // mm/s
+            const float max_rot_vel = 30.0f;    // deg/s
+            const float dt_cap = 0.1f;          // s, prevent large jumps
+
+            if (dt > dt_cap) dt = dt_cap;
+
+            float x_norm = _joyX / joy_max;
+            float y_norm = _joyY / joy_max;
+
+            // Mode-specific DOFs
+            int trans_dof = -1, rot_dof = -1;
+            if (_currentMode == JOYSTICK_X) {
+                trans_dof = 0;  // x translation
+                rot_dof = 3;    // roll rotation
+            } else if (_currentMode == JOYSTICK_Y) {
+                trans_dof = 1;  // y
+                rot_dof = 4;    // pitch
+            } else if (_currentMode == JOYSTICK_Z) {
+                trans_dof = 2;  // z
+                rot_dof = 5;    // yaw
+            }
+
+            // Deltas from joystick velocity
+            float trans_delta = x_norm * max_trans_vel * dt;
+            float rot_delta = y_norm * max_rot_vel * dt;
+
+            // Accumulate to position offsets 
+            _integratedOffsets[trans_dof] += trans_delta;
+            _integratedOffsets[rot_dof] += rot_delta;
+
+
+            // Print accumulated position offsets
+            Serial.print(" | x:"); Serial.print(_integratedOffsets[0], 3);
+            Serial.print(" y:"); Serial.print(_integratedOffsets[1], 3);
+            Serial.print(" z:"); Serial.print(_integratedOffsets[2], 3);
+            Serial.print(" roll:"); Serial.print(_integratedOffsets[3], 3);
+            Serial.print(" pitch:"); Serial.print(_integratedOffsets[4], 3);
+            Serial.print(" yaw:"); Serial.println(_integratedOffsets[5], 3);
         }
     }
 }
@@ -205,7 +266,12 @@ void Controller::update() {
     }
 
     // if the trajectory is not finished, follow it
-    if (!_trajectory._isFinished) {     
+    if (!_trajectory._isFinished) {
+        // reset offsets when starting a new trajectory
+        for (int i = 0; i < 6; i++) {
+            _integratedOffsets[i] = 0.0f;
+        }
+
         follow_trajectory();
         IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
 
@@ -219,8 +285,17 @@ void Controller::update() {
         // Get current servo angles - now directly use _lastCommandedAngles
         _currentPose = _goalPose;
         vector<float> currentAngles = _lastCommandedAngles;
+        // Apply integrated velocity offsets to the goal pose
+        Pose _goalPoseWithVelOffset = _goalPose + Pose(
+            _integratedOffsets[0],
+            _integratedOffsets[1],
+            _integratedOffsets[2],
+            _integratedOffsets[3],
+            _integratedOffsets[4],
+            _integratedOffsets[5]
+        );
     
-        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_goalPose).angles;
+        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_goalPoseWithVelOffset).angles;
         
 
         // Interpolate between current angles and goal angles
@@ -229,7 +304,7 @@ void Controller::update() {
         for (int i = 0; i < 6; i++) {
             interpolatedAngles[i] = currentAngles[i] + 0.005 * (goalAngles[i] - currentAngles[i]);
         }
-        
+
         publishToServos(interpolatedAngles);
     }
 }

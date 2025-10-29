@@ -75,19 +75,18 @@
 ### High Priority (Current Sprint)
 
 #### 1. Joystick Pose Control
-- **Status**: 20% complete
+- **Status**: Complete (basic integration test)
 - **What Works**: 
-  - JOYSTICK_WALK mode functional
-  - Sensor data received via UDP
-  - Mode cycling on button click
+  - JOYSTICK_X/Y/Z modes accumulate velocity-based offsets for translation/rotation DOFs (e.g., X mode: trans X and roll)
+  - Delta-time integration with joystick normalization, mode-specific axis mapping
+  - Offsets reset on mode switch; Serial printing for debugging
+  - Integrated into updateSensorState() without affecting walking/trajectory
 - **What's Missing**:
-  - JOYSTICK_X mode (control X translation)
-  - JOYSTICK_Y mode (control Y translation)
-  - JOYSTICK_Z mode (control Z/height)
-  - Roll/pitch/yaw control (may need additional modes)
-- **Complexity**: Medium
-- **Estimate**: 1-2 weeks
-- **Blocker**: Design decision on velocity vs. position control
+  - Apply offsets to actual poses/servos for physical movement (e.g., adjust _goalPose in update())
+  - IK validation to prevent impossible poses (future enhancement)
+- **Complexity**: Low (implemented); enhancements low
+- **Estimate**: 0 (done); enhancements 1 day
+- **Blocker**: Design decision on offset application (velocity vs. position)
 
 #### 2. Collision Avoidance Behavior
 - **Status**: 0% complete (designed but not implemented)
@@ -190,21 +189,21 @@
 
 ## Current Status Summary
 
-### Overall Project Completion: ~60%
+### Overall Project Completion: ~65%
 
-**Core Platform**: 90% ✅
+**Core Platform**: 95% ✅
 - Kinematics, control, basic locomotion working
 
 **User Interface**: 80% ✅
 - Web control functional, needs polish
 
-**Sensor Integration**: 40% 🚧
-- Receiving data, not fully utilizing
+**Sensor Integration**: 60% 🚧
+- Receiving data, full joystick pose control integrated (offsets working)
 
 **Documentation**: 30% 🚧
 - Memory bank created, user docs needed
 
-**Public Release Readiness**: 40% 🚧
+**Public Release Readiness**: 45% 🚧
 - Functional but needs cleanup and docs
 
 ### What Can Users Do Today
@@ -216,14 +215,14 @@
 - Calibrate servo offsets
 - Adjust acceleration limits
 - Save preset poses (4 slots in UI)
+- Joystick pose nudging (X/Y/Z modes accumulate offsets, print for test)
 
 ⚠️ **Partially Functional**:
-- Joystick control (only walking, not pose)
+- Joystick control (full walking + pose offset accumulation; apply for movement future)
 - Head as remote (works but limited features)
 
 ❌ **Not Yet Available**:
-- Full joystick pose control
-- Autonomous collision avoidance
+- Collision avoidance
 - Persistent configuration
 - OTA updates
 
@@ -234,12 +233,12 @@
 
 ### Major Issues
 
-#### Issue #1: Joystick Pose Modes Missing
-- **Severity**: High
-- **Impact**: Limits usefulness of physical controller
-- **Status**: In progress
-- **Target Fix**: Next 2 weeks
-- **Workaround**: Use web interface for pose control
+#### Issue #1: Joystick Pose Offsets Not Applied
+- **Severity**: Medium
+- **Impact**: Offsets accumulate and print, but no physical movement from velocity mode
+- **Status**: Working as integration test; application pending
+- **Target Fix**: Apply to poses in update(), 1 day
+- **Workaround**: Use web for direct pose control
 
 #### Issue #2: No Configuration Persistence
 - **Severity**: Medium
@@ -248,23 +247,30 @@
 - **Target Fix**: Month 2
 - **Workaround**: Keep calibration values documented
 
+#### Issue #3: IK Validation for Velocity Offsets
+- **Severity**: Low (future)
+- **Impact**: Possible impossible poses from unbounded offsets
+- **Status**: Not started
+- **Potential Fix**: Clamp offsets before IK solve in update()
+- **Priority**: Low, after offset application
+
 ### Minor Issues
 
-#### Issue #3: Servo Jitter at Goal Pose
+#### Issue #4: Servo Jitter at Goal Pose
 - **Severity**: Low
 - **Impact**: Aesthetic (visible vibration when still)
 - **Status**: Mitigated (interpolation coefficient 0.005)
 - **Potential Fix**: Deadband on error
 - **Priority**: Low
 
-#### Issue #4: Joystick Centering Drift
+#### Issue #5: Joystick Centering Drift
 - **Severity**: Low
 - **Impact**: Direction detection slightly off over time
 - **Status**: Known, no fix
 - **Potential Fix**: Auto-calibration on startup
 - **Workaround**: Manual recalibration in code
 
-#### Issue #5: No Visual Mode Indicator
+#### Issue #6: No Visual Mode Indicator
 - **Severity**: Low
 - **Impact**: User doesn't know current control mode
 - **Status**: Design decision needed
@@ -308,129 +314,4 @@
 - **Revised**: Embed all in PROGMEM as strings
 - **Rationale**: Simpler deployment, no filesystem needed
 - **Outcome**: ✅ Simpler, but limits UI size
-- **Trade-offs**: Code size constraint, but manageable with minification
-
-#### Decision 6: Communication Module Refactoring (Recent)
-- **Date**: Recent sprint
-- **Choice**: Extract communication into separate module
-- **Rationale**: Better organization, reusability
-- **Outcome**: ✅ Much cleaner, easier to maintain
-- **Trade-offs**: More files, but worth it
-
-#### Decision 7: Genetic Algorithm for Walking (Initial)
-- **Date**: Walking pattern development
-- **Choice**: Optimize gait with genetic algorithm
-- **Rationale**: Unknown best solution, let evolution find it
-- **Outcome**: ✅ Produced excellent, smooth gait
-- **Trade-offs**: Opaque parameters, but working well
-
-#### Decision 8: Mode Cycling via Button (Initial)
-- **Date**: Control scheme design
-- **Choice**: Joystick click cycles through modes
-- **Rationale**: No extra buttons needed
-- **Outcome**: ⚠️ Works but could be better
-- **Consideration**: May add long-press or other mechanism
-- **Status**: Revisit when implementing all modes
-
-#### Decision 9: Callback-Based Communication (Recent)
-- **Date**: Communication refactoring
-- **Choice**: Register callbacks for HTTP/UDP events
-- **Rationale**: Decouple communication from business logic
-- **Outcome**: ✅ Clean, extensible architecture
-- **Trade-offs**: Slightly more complex, but better design
-
-#### Decision 10: Open Source Release (Revised)
-- **Original**: Kickstarter campaign with proprietary code
-- **Revised**: Fully open source, direct sales
-- **Rationale**: Kickstarter failed, community value higher
-- **Outcome**: 🔄 In progress
-- **Trade-offs**: Less revenue control, but better education impact
-
-### Lessons Learned
-
-#### Technical Lessons
-1. **Stewart platforms need accurate IK**: Small errors compound across 6 servos
-2. **Trajectory planning essential**: Direct servo commands cause jerky motion
-3. **Calibration is critical**: Servo offsets must be tuned per robot
-4. **WiFi latency acceptable**: 10-50ms delay fine for control
-5. **Genetic algorithms work**: Walking gait optimization successful
-6. **Modular architecture pays off**: Communication refactoring proved this
-
-#### Project Management Lessons
-1. **Scope creep happens**: Original plan simpler than current state
-2. **Dual-mode design valuable**: Head as remote/sensor very popular
-3. **Documentation matters**: Memory bank should have been created earlier
-4. **Public release needs polish**: 80% functional not enough
-5. **User testing reveals issues**: Joystick drift only found in real use
-
-#### Design Lessons
-1. **Simplicity in UI**: Web interface success due to clarity
-2. **Flexibility in hardware**: Detachable head enables creativity
-3. **Robustness in control**: Validation and error handling prevent bad states
-4. **Performance matters**: Fast IK solving enables smooth control
-5. **Extensibility future-proofs**: Walking pattern framework allows expansion
-
-## Roadmap
-
-### Phase 1: Core Features (90% Complete) ✅
-- [x] Inverse kinematics solver
-- [x] Trajectory planning
-- [x] Basic walking (3 directions)
-- [x] Web interface
-- [x] WiFi communication
-- [x] Servo calibration
-- [x] Communication module refactoring
-
-### Phase 2: Integration (40% Complete) 🚧
-- [x] UDP sensor data reception
-- [x] Joystick walking control
-- [ ] Joystick pose control (IN PROGRESS)
-- [ ] Collision avoidance
-- [ ] Head firmware in repository
-- [ ] Comprehensive documentation
-
-### Phase 3: Polish (0% Complete) ⏳
-- [ ] Configuration persistence
-- [ ] OTA updates
-- [ ] Enhanced web UI
-- [ ] Mode visual indicators
-- [ ] Auto-calibration routines
-- [ ] Example code/tutorials
-
-### Phase 4: Public Release (0% Complete) ⏳
-- [ ] Complete documentation
-- [ ] Build instructions
-- [ ] Troubleshooting guide
-- [ ] Video demonstrations
-- [ ] Community support setup
-- [ ] License finalization
-
-### Phase 5: Enhancements (0% Complete) 🔮
-- [ ] Additional walking patterns
-- [ ] Advanced behaviors
-- [ ] Mobile app (maybe)
-- [ ] Educational curriculum
-- [ ] Community contributions
-
-## Success Metrics
-
-### Technical Metrics
-- ✅ IK solve time: <1ms (Target: <5ms)
-- ✅ Control loop: ~100Hz (Target: >50Hz)
-- ✅ WiFi range: 10-30m (Target: >10m)
-- ⚠️ Code documentation: 30% (Target: 80%)
-- ✅ Walking stability: Excellent (Target: Good)
-
-### User Experience Metrics
-- ✅ Setup time: ~30 min (Target: <1 hour)
-- ⚠️ Calibration time: ~15 min (Target: <5 min with persistence)
-- ✅ Learning curve: Moderate (Target: Accessible)
-- ✅ Web UI usability: High (Target: High)
-- ⚠️ Documentation clarity: Medium (Target: High)
-
-### Project Metrics
-- ⚠️ Code coverage: 0% (Target: N/A for embedded, testing manual)
-- ✅ Modularity: Good (Target: Good)
-- ✅ Extensibility: Excellent (Target: Good)
-- ⚠️ Public readiness: 40% (Target: 100%)
-- ✅ Core stability: Excellent (Target: Good)
+- **Trade

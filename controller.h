@@ -60,6 +60,11 @@ private:
 
     Pose _goalVelocity;
 
+    // Velocity mode state
+    bool _inVelocityMode;
+    float _integratedOffsets[6];
+    unsigned long _lastSensorTime;
+
     Trajectory _trajectory;
 
     void calculatePIDControl();
