@@ -105,6 +105,7 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
     if (_joyClick && !_prevJoyClick) {
         _currentMode = static_cast<ControlMode>((_currentMode + 1) % 5);
         Serial.println("Control mode: " + getModeString());
+        _isWalking = false;  // stop walking when mode changes
     }
 
     // Set velocity mode based on current mode
@@ -172,31 +173,35 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
         if (dt > 0.0f) {
             // Tuning constants
             const float joy_max = 2000.0f;
-            const float max_trans_vel = 50.0f;  // mm/s
-            const float max_rot_vel = 30.0f;    // deg/s
+            const float max_trans_vel = 70.0f;  // mm/s
+            const float max_rot_vel = 50.0f;    // deg/s
             const float dt_cap = 0.1f;          // s, prevent large jumps
 
             if (dt > dt_cap) dt = dt_cap;
 
             float x_norm = _joyX / joy_max;
             float y_norm = _joyY / joy_max;
+            float trans_delta = 0.0f;
+            float rot_delta = 0.0f;
 
             // Mode-specific DOFs
             int trans_dof = -1, rot_dof = -1;
             if (_currentMode == JOYSTICK_X) {
+                trans_delta = -y_norm * max_trans_vel * dt;
+                rot_delta = x_norm * max_rot_vel * dt;
                 trans_dof = 0;  // x translation
                 rot_dof = 3;    // roll rotation
             } else if (_currentMode == JOYSTICK_Y) {
+                trans_delta = -x_norm * max_trans_vel * dt;
+                rot_delta = -y_norm * max_rot_vel * dt;
                 trans_dof = 1;  // y
                 rot_dof = 4;    // pitch
             } else if (_currentMode == JOYSTICK_Z) {
+                trans_delta = y_norm * max_trans_vel * dt;
+                rot_delta = x_norm * max_rot_vel * dt;
                 trans_dof = 2;  // z
                 rot_dof = 5;    // yaw
             }
-
-            // Deltas from joystick velocity
-            float trans_delta = x_norm * max_trans_vel * dt;
-            float rot_delta = y_norm * max_rot_vel * dt;
 
             Pose unchecked_offsets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
             unchecked_offsets[trans_dof] = trans_delta;
