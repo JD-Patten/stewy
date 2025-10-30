@@ -75,18 +75,19 @@
 ### High Priority (Current Sprint)
 
 #### 1. Joystick Pose Control
-- **Status**: Complete (basic integration test)
+- **Status**: Fully implemented
 - **What Works**: 
-  - JOYSTICK_X/Y/Z modes accumulate velocity-based offsets for translation/rotation DOFs (e.g., X mode: trans X and roll)
+  - JOYSTICK_X/Y/Z modes compute unchecked_offsets as Pose for translation/rotation DOFs (e.g., X mode: trans X and roll)
   - Delta-time integration with joystick normalization, mode-specific axis mapping
-  - Offsets reset on mode switch; Serial printing for debugging
-  - Integrated into updateSensorState() without affecting walking/trajectory
+  - IK validation: Test tentative (_integratedOffsets + unchecked_offsets) + _currentPose before accumulating; skip invalid
+  - Offsets applied to _goalPose in update() for physical movement via IK and interpolation
+  - _integratedOffsets changed to Pose type for consistency; operator+ used
+  - Offsets reset on new trajectory; Serial printing of integrated offsets using toString()
+  - Integrated into updateSensorState() and update() without affecting walking/trajectory
 - **What's Missing**:
-  - Apply offsets to actual poses/servos for physical movement (e.g., adjust _goalPose in update())
-  - IK validation to prevent impossible poses (future enhancement)
-- **Complexity**: Low (implemented); enhancements low
-- **Estimate**: 0 (done); enhancements 1 day
-- **Blocker**: Design decision on offset application (velocity vs. position)
+  - None
+- **Complexity**: Low-Medium
+- **Estimate**: 0
 
 #### 2. Collision Avoidance Behavior
 - **Status**: 0% complete (designed but not implemented)
@@ -189,7 +190,7 @@
 
 ## Current Status Summary
 
-### Overall Project Completion: ~65%
+### Overall Project Completion: ~70%
 
 **Core Platform**: 95% ✅
 - Kinematics, control, basic locomotion working
@@ -197,13 +198,13 @@
 **User Interface**: 80% ✅
 - Web control functional, needs polish
 
-**Sensor Integration**: 60% 🚧
-- Receiving data, full joystick pose control integrated (offsets working)
+**Sensor Integration**: 80% ✅
+- Receiving data, full joystick pose control with IK-validated offset application
 
 **Documentation**: 30% 🚧
 - Memory bank created, user docs needed
 
-**Public Release Readiness**: 45% 🚧
+**Public Release Readiness**: 50% 🚧
 - Functional but needs cleanup and docs
 
 ### What Can Users Do Today
@@ -215,10 +216,9 @@
 - Calibrate servo offsets
 - Adjust acceleration limits
 - Save preset poses (4 slots in UI)
-- Joystick pose nudging (X/Y/Z modes accumulate offsets, print for test)
+- Joystick pose nudging (X/Y/Z modes with IK-validated accumulation and offset application to poses)
 
 ⚠️ **Partially Functional**:
-- Joystick control (full walking + pose offset accumulation; apply for movement future)
 - Head as remote (works but limited features)
 
 ❌ **Not Yet Available**:
@@ -256,21 +256,21 @@
 
 ### Minor Issues
 
-#### Issue #4: Servo Jitter at Goal Pose
+#### Issue #2: Servo Jitter at Goal Pose
 - **Severity**: Low
 - **Impact**: Aesthetic (visible vibration when still)
 - **Status**: Mitigated (interpolation coefficient 0.005)
 - **Potential Fix**: Deadband on error
 - **Priority**: Low
 
-#### Issue #5: Joystick Centering Drift
+#### Issue #3: Joystick Centering Drift
 - **Severity**: Low
 - **Impact**: Direction detection slightly off over time
 - **Status**: Known, no fix
 - **Potential Fix**: Auto-calibration on startup
 - **Workaround**: Manual recalibration in code
 
-#### Issue #6: No Visual Mode Indicator
+#### Issue #4: No Visual Mode Indicator
 - **Severity**: Low
 - **Impact**: User doesn't know current control mode
 - **Status**: Design decision needed

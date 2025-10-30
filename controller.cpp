@@ -28,9 +28,7 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
         _servos[i].attach(servoPins[i], 500, 2500);  // Attach servo with min/max pulse widths
     }
 
-    for (int i = 0; i < 6; i++) {
-        _integratedOffsets[i] = 0.0f;
-    }
+    _integratedOffsets = Pose();
 }
         
 void Controller::begin(const Pose& initialPose) {
@@ -200,18 +198,22 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             float trans_delta = x_norm * max_trans_vel * dt;
             float rot_delta = y_norm * max_rot_vel * dt;
 
-            // Accumulate to position offsets 
-            _integratedOffsets[trans_dof] += trans_delta;
-            _integratedOffsets[rot_dof] += rot_delta;
+            Pose unchecked_offsets(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            unchecked_offsets[trans_dof] = trans_delta;
+            unchecked_offsets[rot_dof] = rot_delta;
 
+            // Test tentative integration
+            Pose tentative = _integratedOffsets + unchecked_offsets;
+            Pose testPose = _currentPose + tentative;
 
-            // Print accumulated position offsets
-            Serial.print(" | x:"); Serial.print(_integratedOffsets[0], 3);
-            Serial.print(" y:"); Serial.print(_integratedOffsets[1], 3);
-            Serial.print(" z:"); Serial.print(_integratedOffsets[2], 3);
-            Serial.print(" roll:"); Serial.print(_integratedOffsets[3], 3);
-            Serial.print(" pitch:"); Serial.print(_integratedOffsets[4], 3);
-            Serial.print(" yaw:"); Serial.println(_integratedOffsets[5], 3);
+            IKResult testResult = _ikSolver.solveInverseKinematics(testPose);
+            if (testResult.success) {
+                // Commit accumulation if valid
+                _integratedOffsets += unchecked_offsets;
+                Serial.println("Integrated offsets: " + _integratedOffsets.toString());
+            } else {
+                Serial.println("Skipped invalid offsets: " + unchecked_offsets.toString());
+            }
         }
     }
 }
@@ -268,9 +270,7 @@ void Controller::update() {
     // if the trajectory is not finished, follow it
     if (!_trajectory._isFinished) {
         // reset offsets when starting a new trajectory
-        for (int i = 0; i < 6; i++) {
-            _integratedOffsets[i] = 0.0f;
-        }
+        _integratedOffsets = Pose();
 
         follow_trajectory();
         IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
@@ -286,14 +286,7 @@ void Controller::update() {
         _currentPose = _goalPose;
         vector<float> currentAngles = _lastCommandedAngles;
         // Apply integrated velocity offsets to the goal pose
-        Pose _goalPoseWithVelOffset = _goalPose + Pose(
-            _integratedOffsets[0],
-            _integratedOffsets[1],
-            _integratedOffsets[2],
-            _integratedOffsets[3],
-            _integratedOffsets[4],
-            _integratedOffsets[5]
-        );
+        Pose _goalPoseWithVelOffset = _goalPose + _integratedOffsets;
     
         vector<float> goalAngles = _ikSolver.solveInverseKinematics(_goalPoseWithVelOffset).angles;
         

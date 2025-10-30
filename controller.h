@@ -62,7 +62,7 @@ private:
 
     // Velocity mode state
     bool _inVelocityMode;
-    float _integratedOffsets[6];
+    Pose _integratedOffsets;
     unsigned long _lastSensorTime;
 
     Trajectory _trajectory;
