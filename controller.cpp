@@ -205,9 +205,8 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             unchecked_offsets[trans_dof] = trans_delta;
             unchecked_offsets[rot_dof] = rot_delta;
 
-            // Test tentative integration
-            Pose tentative = _integratedOffsets + unchecked_offsets;
-            Pose testPose = _currentPose + tentative;
+            // Test tentative integration;
+            Pose testPose = _goalPose + _integratedOffsets + unchecked_offsets;
 
             IKResult testResult = _ikSolver.solveInverseKinematics(testPose);
             if (testResult.success) {
@@ -226,7 +225,7 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
         target_offset = 150.0f;
     }
     if (dt > 0.0f) {
-        float avoidance_velocity = 150.0f;  // mm/s, tunable
+        float avoidance_velocity = 200.0f;  // mm/s, tunable
         float delta = 0.0f;
         if (target_offset > _collisionOffsetMagnitude) {
             delta = avoidance_velocity * dt;
