@@ -47,6 +47,8 @@ private:
     float _joyY;
     bool _joyClick;
     bool _prevJoyClick;
+    float _collisionOffsetMagnitude = 0.0f;
+    Pose _collisionOffsets;
 
     WalkingPattern1 _walkingPattern;
     float _walkingStartTime;

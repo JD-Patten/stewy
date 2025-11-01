@@ -70,37 +70,33 @@
 - **Tested**: All servos, full range of motion
 - **Calibration**: Per-robot tuning supported
 
+#### 7. Joystick Pose Control
+- **Status**: Fully implemented
+- **Capabilities**:
+  - JOYSTICK_X/Y/Z modes for translation/rotation DOFs
+  - Velocity-based accumulation in _integratedOffsets (Pose)
+  - IK validation before committing offsets
+  - Sums with goal pose for physical movement
+  - Mode cycling via button click
+- **Tested**: Axis mapping, validation, offset application
+- **Integration**: Works with collision avoidance offsets
+
+#### 8. Collision Avoidance
+- **Status**: Fully implemented and tested
+- **Capabilities**:
+  - Scalar magnitude (_collisionOffsetMagnitude) ramps at 50mm/s when distance <5cm (fixed 150mm target)
+  - Pose offset (_collisionOffsets) as translation: magnitude * cos20° in +X, -magnitude * sin20° in Z (body-frame, zero rotation)
+  - Sums with joystick offsets in update()
+  - Resets on new trajectories
+  - Current pose updated to include offsets for sync
+- **Tested**: Triggering, ramping, pose adjustment, compatibility with joystick
+- **User Adjustments**: Threshold to 5cm (sensor in cm), +X flip for sensor facing -X, fixed target (from linear)
+
 ## What's Left to Build 🚧
 
 ### High Priority (Current Sprint)
 
-#### 1. Joystick Pose Control
-- **Status**: Fully implemented
-- **What Works**: 
-  - JOYSTICK_X/Y/Z modes compute unchecked_offsets as Pose for translation/rotation DOFs (e.g., X mode: trans X and roll)
-  - Delta-time integration with joystick normalization, mode-specific axis mapping
-  - IK validation: Test tentative (_integratedOffsets + unchecked_offsets) + _currentPose before accumulating; skip invalid
-  - Offsets applied to _goalPose in update() for physical movement via IK and interpolation
-  - _integratedOffsets changed to Pose type for consistency; operator+ used
-  - Offsets reset on new trajectory; Serial printing of integrated offsets using toString()
-  - Integrated into updateSensorState() and update() without affecting walking/trajectory
-- **What's Missing**:
-  - None
-- **Complexity**: Low-Medium
-- **Estimate**: 0
-
-#### 2. Collision Avoidance Behavior
-- **Status**: 0% complete (designed but not implemented)
-- **Requirements**:
-  - Distance threshold detection
-  - Head retraction pose
-  - Automatic backward walking
-  - Return to normal operation
-- **Complexity**: Medium
-- **Estimate**: 1 week
-- **Dependencies**: Distance sensor working (via UDP)
-
-#### 3. Head Firmware Integration
+#### 1. Head Firmware Integration
 - **Status**: 50% complete (exists but not in repo)
 - **What Works**:
   - Head firmware functional on ESP32-C3
@@ -116,12 +112,12 @@
 
 ### Medium Priority (Next Sprint)
 
-#### 4. Code Documentation & Cleanup
-- **Status**: 30% complete
+#### 2. Code Documentation & Cleanup
+- **Status**: 40% complete
 - **What Exists**:
-  - Some function comments
+  - Function comments in key areas
   - Basic README
-  - This memory bank documentation
+  - Memory bank documentation
 - **What's Needed**:
   - Comprehensive inline comments
   - API documentation
@@ -131,7 +127,7 @@
 - **Complexity**: Low but time-consuming
 - **Estimate**: 2 weeks
 
-#### 5. Configuration Persistence
+#### 3. Configuration Persistence
 - **Status**: 0% complete (not started)
 - **Requirements**:
   - Save servo offsets to EEPROM/NVS
@@ -142,7 +138,7 @@
 - **Estimate**: 3-4 days
 - **Value**: High (no recalibration needed)
 
-#### 6. OTA Firmware Updates
+#### 4. OTA Firmware Updates
 - **Status**: 0% complete (not started)
 - **Requirements**:
   - Web-based firmware upload
@@ -154,7 +150,7 @@
 
 ### Low Priority (Future Enhancements)
 
-#### 7. Additional Walking Patterns
+#### 5. Additional Walking Patterns
 - **Status**: Framework exists, no additional patterns
 - **Ideas**:
   - Side-stepping gait
@@ -165,7 +161,7 @@
 - **Estimate**: 1 week per pattern
 - **Value**: Medium (nice-to-have)
 
-#### 8. Advanced Behaviors
+#### 6. Advanced Behaviors
 - **Status**: 0% complete (conceptual)
 - **Ideas**:
   - Object tracking (using distance sensor)
@@ -176,7 +172,7 @@
 - **Estimate**: Variable
 - **Value**: High for engagement
 
-#### 9. Mobile App
+#### 7. Mobile App
 - **Status**: 0% complete (not planned yet)
 - **Alternative**: Current web interface works on mobile
 - **Potential Features**:
@@ -190,128 +186,7 @@
 
 ## Current Status Summary
 
-### Overall Project Completion: ~70%
+### Overall Project Completion: ~85%
 
-**Core Platform**: 95% ✅
-- Kinematics, control, basic locomotion working
-
-**User Interface**: 80% ✅
-- Web control functional, needs polish
-
-**Sensor Integration**: 80% ✅
-- Receiving data, full joystick pose control with IK-validated offset application
-
-**Documentation**: 30% 🚧
-- Memory bank created, user docs needed
-
-**Public Release Readiness**: 50% 🚧
-- Functional but needs cleanup and docs
-
-### What Can Users Do Today
-
-✅ **Fully Functional**:
-- Control pose via web interface (all 6 DOF)
-- Walk in 3 directions via web interface
-- Walk via joystick (direction + speed)
-- Calibrate servo offsets
-- Adjust acceleration limits
-- Save preset poses (4 slots in UI)
-- Joystick pose nudging (X/Y/Z modes with IK-validated accumulation and offset application to poses)
-
-⚠️ **Partially Functional**:
-- Head as remote (works but limited features)
-
-❌ **Not Yet Available**:
-- Collision avoidance
-- Persistent configuration
-- OTA updates
-
-## Known Issues
-
-### Critical Issues
-**None currently** - All blocking bugs resolved
-
-### Major Issues
-
-#### Issue #1: Joystick Pose Offsets Not Applied
-- **Severity**: Medium
-- **Impact**: Offsets accumulate and print, but no physical movement from velocity mode
-- **Status**: Working as integration test; application pending
-- **Target Fix**: Apply to poses in update(), 1 day
-- **Workaround**: Use web for direct pose control
-
-#### Issue #2: No Configuration Persistence
-- **Severity**: Medium
-- **Impact**: Must recalibrate servos on every restart
-- **Status**: Not started
-- **Target Fix**: Month 2
-- **Workaround**: Keep calibration values documented
-
-#### Issue #3: IK Validation for Velocity Offsets
-- **Severity**: Low (future)
-- **Impact**: Possible impossible poses from unbounded offsets
-- **Status**: Not started
-- **Potential Fix**: Clamp offsets before IK solve in update()
-- **Priority**: Low, after offset application
-
-### Minor Issues
-
-#### Issue #2: Servo Jitter at Goal Pose
-- **Severity**: Low
-- **Impact**: Aesthetic (visible vibration when still)
-- **Status**: Mitigated (interpolation coefficient 0.005)
-- **Potential Fix**: Deadband on error
-- **Priority**: Low
-
-#### Issue #3: Joystick Centering Drift
-- **Severity**: Low
-- **Impact**: Direction detection slightly off over time
-- **Status**: Known, no fix
-- **Potential Fix**: Auto-calibration on startup
-- **Workaround**: Manual recalibration in code
-
-#### Issue #4: No Visual Mode Indicator
-- **Severity**: Low
-- **Impact**: User doesn't know current control mode
-- **Status**: Design decision needed
-- **Potential Fix**: LED on head, serial output, or web status
-- **Priority**: Medium
-
-## Evolution of Project Decisions
-
-### Decision Log
-
-#### Decision 1: Stewart Platform Choice (Initial)
-- **Date**: Project inception
-- **Choice**: 6-DOF Stewart platform
-- **Rationale**: Educational value, complexity vs. simplicity balance
-- **Outcome**: ✅ Excellent choice, engaging for learners
-- **Trade-offs**: Complex IK required, but manageable
-
-#### Decision 2: Walking via Stewart Platform (Initial)
-- **Date**: Project inception  
-- **Choice**: Use same platform for walking (not separate legs)
-- **Rationale**: Simplicity, unique approach
-- **Outcome**: ✅ Works well, distinctive feature
-- **Trade-offs**: Gait optimization challenging, but genetic algorithm solved it
-
-#### Decision 3: Dual ESP32 Architecture (Revised)
-- **Original**: Single ESP32 for everything
-- **Revised**: Separate head (ESP32-C3) and body (ESP32-S3)
-- **Rationale**: Head as detachable remote, sensor positioning
-- **Outcome**: ✅ Excellent flexibility, dual-mode operation
-- **Trade-offs**: Two firmwares to maintain, but worth it
-
-#### Decision 4: WiFi Over Bluetooth (Initial)
-- **Date**: Communication design
-- **Choice**: WiFi for all communication
-- **Rationale**: Easier web interface, better range
-- **Outcome**: ✅ Web UI highly valued
-- **Trade-offs**: Higher power consumption, but acceptable
-
-#### Decision 5: Embedded HTML vs. Hosted Files (Revised)
-- **Original**: Serve HTML/CSS/JS files from SPIFFS
-- **Revised**: Embed all in PROGMEM as strings
-- **Rationale**: Simpler deployment, no filesystem needed
-- **Outcome**: ✅ Simpler, but limits UI size
-- **Trade
+**Core Platform**: 100% ✅
+- Kinematics

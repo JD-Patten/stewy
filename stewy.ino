@@ -14,8 +14,7 @@ const char *password = "stewy123";
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-// vector<float> servoOffsets = {5, -3, 2, -2, 8, 6}; // plastic gear offsets
-vector<float> servoOffsets = {0, -2, 7, -4, 4, 0};  // metal gear offsets
+vector<float> servoOffsets = {-15, -15, -15, -25, -15, -15};  // change these to fix mechanical offsets in the arms
 
 // Create IK solver instance
 IKSolver ikSolver(
@@ -53,6 +52,35 @@ void httpCommandHandler(const String& path, const String& params) {
       controller.setGoalPose(poseToSet);
     } else {
       Serial.println("Invalid pose format in params");
+    }
+  } else if (path == "/setOffsets") {
+    Serial.println("Handling servo offsets update");
+    vector<float> newOffsets(6, 0.0f);
+    int count = 0;
+    int start = 0;
+    String paramStr = params;
+    bool valid = true;
+    for (int i = 0; i < 6; i++) {
+      int comma = paramStr.indexOf(',', start);
+      if (comma == -1) {
+        comma = paramStr.length();
+        if (i < 5) valid = false;  // Need 6 values
+      }
+      String valStr = paramStr.substring(start, comma);
+      valStr.trim();  // Remove whitespace
+      newOffsets[i] = valStr.toFloat();
+      start = (comma < paramStr.length() && i < 5) ? comma + 1 : -1;
+      count++;
+    }
+    if (valid && count == 6) {
+      servoOffsets = newOffsets;
+      controller.setOffsets(servoOffsets);
+      Serial.println("Offsets updated to:");
+      for (int i = 0; i < 6; i++) {
+        Serial.print("Servo "); Serial.print(i); Serial.print(": "); Serial.println(newOffsets[i]);
+      }
+    } else {
+      Serial.println("Invalid offsets params: expected exactly 6 comma-separated floats");
     }
   }
 

@@ -85,6 +85,11 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
     _joyY = raw_joyY - yCenter;
     if (abs(_joyY) < deadzone) _joyY = 0;
 
+    // Shared dt computation for sensor integrations
+    unsigned long now = millis();
+    float dt = (now - _lastSensorTime) / 1000.0f;
+    _lastSensorTime = now;
+    if (dt > 0.1f) dt = 0.1f;
 
     float magnitude = sqrt(_joyX * _joyX + _joyY * _joyY);
     if (magnitude > 2000) magnitude = 2000;
@@ -166,18 +171,11 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
 
     // Print-only basic integration test for JOYSTICK_X/Y/Z modes
     if (_inVelocityMode && _trajectory._isFinished) {
-        unsigned long now = millis();
-        float dt = (now - _lastSensorTime) / 1000.0f;
-        _lastSensorTime = now;
-
         if (dt > 0.0f) {
             // Tuning constants
             const float joy_max = 2000.0f;
             const float max_trans_vel = 70.0f;  // mm/s
             const float max_rot_vel = 50.0f;    // deg/s
-            const float dt_cap = 0.1f;          // s, prevent large jumps
-
-            if (dt > dt_cap) dt = dt_cap;
 
             float x_norm = _joyX / joy_max;
             float y_norm = _joyY / joy_max;
@@ -215,12 +213,34 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             if (testResult.success) {
                 // Commit accumulation if valid
                 _integratedOffsets += unchecked_offsets;
-                Serial.println("Integrated offsets: " + _integratedOffsets.toString());
+                //Serial.println("Integrated offsets: " + _integratedOffsets.toString());
             } else {
                 Serial.println("Skipped invalid offsets: " + unchecked_offsets.toString());
             }
         }
     }
+
+    // Collision avoidance offset (persistent, velocity-based)
+    float target_offset = 0.0f;
+    if (_distance < 5.0f) {
+        target_offset = 150.0f;
+    }
+    if (dt > 0.0f) {
+        float avoidance_velocity = 150.0f;  // mm/s, tunable
+        float delta = 0.0f;
+        if (target_offset > _collisionOffsetMagnitude) {
+            delta = avoidance_velocity * dt;
+        } else if (target_offset < _collisionOffsetMagnitude) {
+            delta = -avoidance_velocity * dt;
+        }
+        _collisionOffsetMagnitude += delta;
+        _collisionOffsetMagnitude = max(0.0f, min(150.0f, _collisionOffsetMagnitude));
+    }
+
+    // Set collision pose offset
+    float pitch = (20 + _currentPose.pitch) * 3.14159 / 180.0;
+    float yaw = _currentPose.yaw * 3.14159 / 180.0;
+    _collisionOffsets = Pose(_collisionOffsetMagnitude * cos(pitch) * cos(yaw) , _collisionOffsetMagnitude * cos(pitch) * sin(yaw), -1 * _collisionOffsetMagnitude * sin(pitch), 0, 0, 0);
 }
 
 void Controller::walk() {
@@ -276,6 +296,7 @@ void Controller::update() {
     if (!_trajectory._isFinished) {
         // reset offsets when starting a new trajectory
         _integratedOffsets = Pose();
+        _collisionOffsets = Pose();
 
         follow_trajectory();
         IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
@@ -288,12 +309,12 @@ void Controller::update() {
     // if the trajectory is finished, publish the goal pose
     else {
         // Get current servo angles - now directly use _lastCommandedAngles
-        _currentPose = _goalPose;
+        _currentPose = _goalPose + _integratedOffsets + _collisionOffsets;
         vector<float> currentAngles = _lastCommandedAngles;
         // Apply integrated velocity offsets to the goal pose
-        Pose _goalPoseWithVelOffset = _goalPose + _integratedOffsets;
+        Pose _goalPoseWithVelOffset = _currentPose;
     
-        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_goalPoseWithVelOffset).angles;
+        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_currentPose).angles;
         
 
         // Interpolate between current angles and goal angles
@@ -304,6 +325,8 @@ void Controller::update() {
         }
 
         publishToServos(interpolatedAngles);
+        //Serial.println("POSE: " + _goalPoseWithVelOffset.toString());
+        //Serial.println("ANGLES: " + String(interpolatedAngles[0]) + ", " + String(interpolatedAngles[1]) + ", " + String(interpolatedAngles[2]) + ", " + String(interpolatedAngles[3]) + ", " + String(interpolatedAngles[4]) + ", " + String(interpolatedAngles[5]));
     }
 }
 void Controller::startWalking(String direction, float speedMultiplier) {
