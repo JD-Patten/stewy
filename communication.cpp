@@ -57,29 +57,37 @@ void wifiSetup(const char* ssid_arg, const char* pass_arg) {
   Serial.println("HTTP server started");
 }
 
-void wifiRun() {
+void wifiRun()
+{
   // UDP: check for joystick packets; forward to UDP callback when size matches
   int packetSize = udp.parsePacket();
-  if (packetSize > 0) {
+  if (packetSize > 0)
+  {
     // If your sender uses the same struct size:
-    if (packetSize == (int)sizeof(JoystickPacket)) {
+    if (packetSize == (int)sizeof(JoystickPacket))
+    {
       JoystickPacket pkt;
-      int r = udp.read((uint8_t*)&pkt, sizeof(pkt));
-      if (r == (int)sizeof(pkt)) {
-        if (udpCb) udpCb(pkt);
-        else {
+      int r = udp.read((uint8_t *)&pkt, sizeof(pkt));
+      if (r == (int)sizeof(pkt))
+      {
+        if (udpCb)
+          udpCb(pkt);
+        else
+{
           // Default logging if no callback registered
-          Serial.print("received UDP packet of size "); Serial.print(r);
+          Serial.print("received UDP packet of size ");
+          Serial.print(r);
+        }
       }
-    } else {
-      // consume/ignore unexpected-sized packet
-      uint8_t buf[256];
-      int r = udp.read(buf, min(packetSize, (int)sizeof(buf)));
-      Serial.printf("Ignored UDP packet of size %d (read %d)\n", packetSize, r);
+      else
+      {
+        // consume/ignore unexpected-sized packet
+        uint8_t buf[256];
+        int r = udp.read(buf, min(packetSize, (int)sizeof(buf)));
+        Serial.printf("Ignored UDP packet of size %d (read %d)\n", packetSize, r);
+      }
     }
   }
-
   // HTTP
   server.handleClient();
-}
 }

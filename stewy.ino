@@ -14,7 +14,7 @@ const char *password = "stewy123";
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-vector<float> servoOffsets = {-15, -15, -15, -25, -15, -15};  // change these to fix mechanical offsets in the arms
+vector<float> servoOffsets = {0, 0, 0, 0, 0, 0};  // change these to fix mechanical offsets in the arms
 
 // Create IK solver instance
 IKSolver ikSolver(
@@ -46,7 +46,6 @@ void httpCommandHandler(const String& path, const String& params) {
   Serial.println(params);
 
   if (path == "/pose1") {
-    Serial.print("Lets GOOOOOOOO!!");
     Pose poseToSet;
     if (poseToSet.fromString(params)) {
       controller.setGoalPose(poseToSet);
@@ -82,8 +81,34 @@ void httpCommandHandler(const String& path, const String& params) {
     } else {
       Serial.println("Invalid offsets params: expected exactly 6 comma-separated floats");
     }
-  }
+  } else if (path == "/walk") {
+    // Example params: "direction,speedMultiplier"
+    int commaIndex = params.indexOf(',');
+    if (commaIndex != -1) {
+      String speedStr = params.substring(0, commaIndex);
+      String direction = params.substring(commaIndex + 1);
+      float speedMultiplier = speedStr.toFloat();
+      controller.startWalking(direction, speedMultiplier);
+      Serial.println("Started walking " + direction + " at speed multiplier " + String(speedMultiplier));
+    } else {
+      Serial.println("Invalid startWalk params");
+    }
 
+}else if (path == "/setMaxAccel") {
+    // Example params: "transAccel,rotAccel"
+    int commaIndex = params.indexOf(',');
+    if (commaIndex != -1) {
+      String transStr = params.substring(0, commaIndex);
+      String rotStr = params.substring(commaIndex + 1);
+      float transAccel = transStr.toFloat();
+      float rotAccel = rotStr.toFloat();
+      controller.setAccelerationLimits(transAccel, rotAccel);
+      Serial.println("Set max accelerations - Translational: " + String(transAccel) + ", Rotational: " + String(rotAccel));
+    } else {
+      Serial.println("Invalid setMaxAccel params");
+    }
+  }
+  // Blink built-in LED to indicate request processed 
   digitalWrite(LED_BUILTIN, HIGH);
   delay(10);
   digitalWrite(LED_BUILTIN, LOW);
@@ -119,8 +144,7 @@ void setup() {
 
   // start the controller (unchanged)
   controller.setOffsets(servoOffsets);
-  controller.begin(Pose(0, 0, 130, 0, 0, 0));
-  controller.setGoalPose(Pose(0, 0, 110, 0, 0, 0));
+  controller.begin(Pose(0, 0, 0, 0, 0, 0));
 }
 
 void loop() {

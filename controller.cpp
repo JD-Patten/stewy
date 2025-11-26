@@ -32,18 +32,22 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
 }
         
 void Controller::begin(const Pose& initialPose) {
-    _goalPose = initialPose;
 
-    // solve inverse kinematics
-    IKResult result = _ikSolver.solveInverseKinematics(initialPose);
+    _trajectory._isFinished = true;
 
-    if (result.success) {
+    // If a valid initial pose is provided, set it
+    // and if not set all zervos to angle zero + offsets
+
+    if(_ikSolver.solveInverseKinematics(initialPose).success) {
         _goalPose = initialPose;
         _currentPose = initialPose;
-        publishToServos(result.angles);
     } else {
-        Serial.println("Failed to solve inverse kinematics");
+        Serial.println("Warning: Initial pose is invalid, setting to zero pose.");
+        _currentPose = Pose(0, 0, 0, 0, 0, 0);
+        _goalPose = Pose(0, 0, 0, 0, 0, 0);
+        publishToServos(vector<float>(6, 0.0));
     }
+
 }
 
 void Controller::publishToServos(const vector<float>& angles) {
@@ -231,6 +235,7 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             delta = avoidance_velocity * dt;
         } else if (target_offset < _collisionOffsetMagnitude) {
             delta = -avoidance_velocity * dt;
+            avoidance_velocity = 100.0f;  // mm/s, tunable
         }
         _collisionOffsetMagnitude += delta;
         _collisionOffsetMagnitude = max(0.0f, min(150.0f, _collisionOffsetMagnitude));
