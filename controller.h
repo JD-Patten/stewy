@@ -92,6 +92,7 @@ public:
     void setDampingFactor(float dampingFactor);
     void setOffsets(vector<float> offsets);
     void setAngleLimits(float min, float max);
+    void setAngles(const vector<float>& angles);
     void update();
     vector<float> getServoAngles();
     String getModeString();

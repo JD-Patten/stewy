@@ -14,7 +14,7 @@ const char *password = "stewy123";
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-vector<float> servoOffsets = {0, 0, 0, 0, 0, 0};  // change these to fix mechanical offsets in the arms
+vector<float> servoOffsets = {3,1,12,11,3, -2};  // change these to fix mechanical offsets in the arms
 
 // Create IK solver instance
 IKSolver ikSolver(
@@ -81,6 +81,35 @@ void httpCommandHandler(const String& path, const String& params) {
     } else {
       Serial.println("Invalid offsets params: expected exactly 6 comma-separated floats");
     }
+ } else if (path == "/setAngles") {
+    Serial.println("Setting servo angles");
+    vector<float> newAngles(6, 0.0f);
+    int count = 0;
+    int start = 0;
+    String paramStr = params;
+    bool valid = true;
+    for (int i = 0; i < 6; i++) {
+      int comma = paramStr.indexOf(',', start);
+      if (comma == -1) {
+        comma = paramStr.length();
+        if (i < 5) valid = false;  // Need 6 values
+      }
+      String valStr = paramStr.substring(start, comma);
+      valStr.trim();  // Remove whitespace
+      newAngles[i] = valStr.toFloat();
+      start = (comma < paramStr.length() && i < 5) ? comma + 1 : -1;
+      count++;
+    }
+    if (valid && count == 6) {
+      controller.setAngles(newAngles);
+      Serial.println("Angles updated to:");
+      for (int i = 0; i < 6; i++) {
+        Serial.print("Servo "); Serial.print(i); Serial.print(": "); Serial.println(newAngles[i]);
+      }
+    } else {
+      Serial.println("Invalid angles params: expected exactly 6 comma-separated floats");
+    }
+
   } else if (path == "/walk") {
     // Example params: "direction,speedMultiplier"
     int commaIndex = params.indexOf(',');
@@ -116,10 +145,10 @@ void httpCommandHandler(const String& path, const String& params) {
 
 void udpPacketHandler(const JoystickPacket& pkt) {
     // Example: just print the received joystick packet
-    //Serial.print("UDP Packet - JoyX: "); Serial.print(pkt.joyX);
-    //Serial.print(" JoyY: "); Serial.print(pkt.joyY);
-    //Serial.print(" Clicked: "); Serial.print(pkt.clicked);
-    //Serial.print(" Distance: "); Serial.println(pkt.distance);
+    Serial.print("UDP Packet - JoyX: "); Serial.print(pkt.joyX);
+    Serial.print(" JoyY: "); Serial.print(pkt.joyY);
+    Serial.print(" Clicked: "); Serial.print(pkt.clicked);
+    Serial.print(" Distance: "); Serial.println(pkt.distance);
 
     controller.updateSensorState(pkt.distance, pkt.joyX, pkt.joyY, pkt.clicked);
 }
@@ -142,9 +171,38 @@ void setup() {
   onHttpCommand(httpCommandHandler);
   onUdpPacket(udpPacketHandler);
 
-  // start the controller (unchanged)
-  controller.setOffsets(servoOffsets);
-  controller.begin(Pose(0, 0, 0, 0, 0, 0));
+
+// Find home position
+Pose homePose;
+
+vector<float> targetAngles = {-23, 23, -23, 23, -23, 23};
+float zMin = 0, zMax = 300;
+
+while(zMax - zMin > 0.1) {
+    float zMid = (zMin + zMax) / 2.0;
+    auto result = ikSolver.solveInverseKinematics(Pose(0, 0, zMid, 0, 0, 0));
+    
+    if(!result.success) {
+        zMax = zMid;
+        continue;
+    }
+    
+    float maxError = 0;
+    for(int i = 0; i < 6; i++) {
+        maxError = max(maxError, abs(result.angles[i] - targetAngles[i]));
+    }
+    
+    if(maxError < 0.1) {
+        Serial.println("Found homePose: (0,0," + String(zMid) + ",0,0,0) with angles: " + String(result.angles[0]) + ", " + String(result.angles[1]) + ", " + String(result.angles[2]) + ", " + String(result.angles[3]) + ", " + String(result.angles[4]) + ", " + String(result.angles[5]));
+        homePose = Pose(0, 0, zMid, 0, 0, 0);
+        break;
+    }
+    
+    (result.angles[0] < targetAngles[0]) ? zMin = zMid : zMax = zMid;
+}
+
+// start the controller
+controller.begin(homePose);
 }
 
 void loop() {

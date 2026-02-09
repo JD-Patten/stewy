@@ -35,8 +35,22 @@ void Controller::begin(const Pose& initialPose) {
 
     _trajectory._isFinished = true;
 
+    // Servo initialization sequence
+    publishToServos(vector<float>{0,0,0,0,0,0});
+    delay(300);
+    
+    // Loop through each servo
+    for(int i = 0; i < 6; i++) {
+        vector<float> angles = {0,0,0,0,0,0};
+        angles[i] = (i % 2 == 0) ? -5 : 5;  // alternate between -5 and 5
+        publishToServos(angles);
+        delay(100);
+        publishToServos(vector<float>{0,0,0,0,0,0});
+        delay(50);
+    }
+
     // If a valid initial pose is provided, set it
-    // and if not set all zervos to angle zero + offsets
+    // and if not set all servos to angle zero + offsets
 
     if(_ikSolver.solveInverseKinematics(initialPose).success) {
         _goalPose = initialPose;
@@ -189,18 +203,18 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
             // Mode-specific DOFs
             int trans_dof = -1, rot_dof = -1;
             if (_currentMode == JOYSTICK_X) {
-                trans_delta = -y_norm * max_trans_vel * dt;
-                rot_delta = x_norm * max_rot_vel * dt;
+                trans_delta = y_norm * max_trans_vel * dt;
+                rot_delta = -x_norm * max_rot_vel * dt;
                 trans_dof = 0;  // x translation
                 rot_dof = 3;    // roll rotation
             } else if (_currentMode == JOYSTICK_Y) {
-                trans_delta = -x_norm * max_trans_vel * dt;
-                rot_delta = -y_norm * max_rot_vel * dt;
+                trans_delta = x_norm * max_trans_vel * dt;
+                rot_delta = y_norm * max_rot_vel * dt;
                 trans_dof = 1;  // y
                 rot_dof = 4;    // pitch
             } else if (_currentMode == JOYSTICK_Z) {
-                trans_delta = y_norm * max_trans_vel * dt;
-                rot_delta = x_norm * max_rot_vel * dt;
+                trans_delta = -y_norm * max_trans_vel * dt;
+                rot_delta = -x_norm * max_rot_vel * dt;
                 trans_dof = 2;  // z
                 rot_dof = 5;    // yaw
             }
@@ -318,19 +332,22 @@ void Controller::update() {
         // Apply integrated velocity offsets to the goal pose
         Pose _goalPoseWithVelOffset = _currentPose;
     
-        vector<float> goalAngles = _ikSolver.solveInverseKinematics(_currentPose).angles;
-        
+        IKResult result = _ikSolver.solveInverseKinematics(_currentPose);
+
+        //make sure a valid IK solution exists
+        if (!result.success) {
+            Serial.println("Error: Unable to solve IK for goal pose: " + _currentPose.toString());
+            return;
+        }
 
         // Interpolate between current angles and goal angles
         // Move 1% closer to the goal angle each time
         vector<float> interpolatedAngles(6);
         for (int i = 0; i < 6; i++) {
-            interpolatedAngles[i] = currentAngles[i] + 0.005 * (goalAngles[i] - currentAngles[i]);
+            interpolatedAngles[i] = currentAngles[i] + 0.005 * (result.angles[i] - currentAngles[i]);
         }
 
         publishToServos(interpolatedAngles);
-        //Serial.println("POSE: " + _goalPoseWithVelOffset.toString());
-        //Serial.println("ANGLES: " + String(interpolatedAngles[0]) + ", " + String(interpolatedAngles[1]) + ", " + String(interpolatedAngles[2]) + ", " + String(interpolatedAngles[3]) + ", " + String(interpolatedAngles[4]) + ", " + String(interpolatedAngles[5]));
     }
 }
 void Controller::startWalking(String direction, float speedMultiplier) {
@@ -388,6 +405,22 @@ void Controller::setOffsets(vector<float> offsets) {
 void Controller::setAngleLimits(float min, float max) {
     _servoAngleMin = min;
     _servoAngleMax = max;
+}
+
+void Controller::setAngles(const vector<float>& angles) {
+    //check to make sure there are 6 angles
+    if (angles.size() != 6) {
+        Serial.println("Error: must provide exactly 6 angles");
+        return;
+    }
+
+    //clear current pose to avoid conflicts
+    _isWalking = false;
+    _trajectory._isFinished = true;
+    _goalPose = Pose(0, 0, 0, 0, 0, 0);
+    _currentPose = Pose(0, 0, 0, 0, 0, 0);
+
+    publishToServos(angles);
 }
 
 void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration) {

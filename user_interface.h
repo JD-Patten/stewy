@@ -8,7 +8,7 @@ const char USER_INTERFACE_HTML[] PROGMEM = R"UI(
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- CSS and JS will be injected here by the combine script -->
     <link rel="stylesheet" href="styles.css">
     <script src="script.js"></script>
@@ -204,7 +204,13 @@ html, body {
     padding-right: 0px;
     padding-left: 20px;
 }
-
+.angles-grid {
+    display: grid;
+    grid-template-columns: auto 100px;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
 
 .offsets-grid {
     display: grid;
@@ -301,7 +307,7 @@ function sendRequest(command, inputs) {
 
 function toggleOffsets() {
     // Get all containers
-    const settingsContainers = document.querySelectorAll('.offsets-container, .accel-container');
+    const settingsContainers = document.querySelectorAll('.offsets-container, .angles-container, .accel-container');
     const controlContainers = document.querySelectorAll('.walking-container, .pose-container');
     const poseGridContainer = document.querySelector('.pose-grid-container');
     
@@ -344,7 +350,7 @@ function toggleOffsets() {
             <label>Speed Multiplier</label>
         </div>
         <div>
-            <input type='number' id='speed_multiplier' placeholder='speed multiplier' value='1.0'>
+            <input type='number' id='speed_multiplier' placeholder='speed multiplier' value='0.5'>
         </div>
     </div>
     
@@ -361,23 +367,56 @@ function toggleOffsets() {
         </div>
         <div class="pose-grid">
             <label>X</label>
-            <input type='number' id='pose_x' placeholder='X' value='0.0'>
+            <input type='number' id='pose_x' placeholder='X' value='0'>
             <label>Roll</label>
-            <input type='number' id='pose_roll' placeholder='Roll' value='0.0'>
+            <input type='number' id='pose_roll' placeholder='Roll' value='0'>
             
             <label>Y</label>
-            <input type='number' id='pose_y' placeholder='Y' value='0.0'>
+            <input type='number' id='pose_y' placeholder='Y' value='0'>
             <label>Pitch</label>
-            <input type='number' id='pose_pitch' placeholder='Pitch' value='0.0'>
+            <input type='number' id='pose_pitch' placeholder='Pitch' value='0'>
             
             <label>Z</label>
-            <input type='number' id='pose_z' placeholder='Z' value='0.0'>
+            <input type='number' id='pose_z' placeholder='Z' value='100'>
             <label>Yaw</label>
-            <input type='number' id='pose_yaw' placeholder='Yaw' value='0.0'>
+            <input type='number' id='pose_yaw' placeholder='Yaw' value='0'>
         </div>
     </div>
 
     <button class="toggle-button" onclick="toggleOffsets()">&#x2699;</button>
+
+    <div class="angles-container hidden">
+        <div>
+            <button onclick="sendRequest('/setAngles', [
+                document.getElementById('angle_1').value,
+                document.getElementById('angle_2').value,
+                document.getElementById('angle_3').value,
+                document.getElementById('angle_4').value,
+                document.getElementById('angle_5').value,
+                document.getElementById('angle_6').value
+            ])">Set angles</button>
+        </div>
+        <div class="angles-grid">
+            <label>Servo 1</label>
+            <input type='number' id='angle_1' placeholder='angle1' value='0'>
+            
+            <label>Servo 2</label>
+            <input type='number' id='angle_2' placeholder='angle2' value='0'>
+
+            <label>Servo 3</label>
+            <input type='number' id='angle_3' placeholder='angle3' value='0'>
+
+            <label>Servo 4</label>
+            <input type='number' id='angle_4' placeholder='angle4' value='0'>
+
+            <label>Servo 5</label>
+            <input type='number' id='angle_5' placeholder='angle5' value='0'>
+
+            <label>Servo 6</label>
+            <input type='number' id='angle_6' placeholder='angle6' value='0'>
+        </div>
+    </div>
+
     <div class="offsets-container hidden">
         <div>
             <button onclick="sendRequest('/setOffsets', [
@@ -391,25 +430,25 @@ function toggleOffsets() {
         </div>
         <div class="offsets-grid">
             <label>Servo 1</label>
-            <input type='number' id='offset_1' placeholder='offset1' value='0.0'>
+            <input type='number' id='offset_1' placeholder='offset1' value='0'>
             
             <label>Servo 2</label>
-            <input type='number' id='offset_2' placeholder='offset2' value='0.0'>
+            <input type='number' id='offset_2' placeholder='offset2' value='0'>
 
             <label>Servo 3</label>
-            <input type='number' id='offset_3' placeholder='offset3' value='0.0'>
+            <input type='number' id='offset_3' placeholder='offset3' value='0'>
 
             <label>Servo 4</label>
-            <input type='number' id='offset_4' placeholder='offset4' value='0.0'>
+            <input type='number' id='offset_4' placeholder='offset4' value='0'>
 
             <label>Servo 5</label>
-            <input type='number' id='offset_5' placeholder='offset5' value='0.0'>
+            <input type='number' id='offset_5' placeholder='offset5' value='0'>
 
             <label>Servo 6</label>
-            <input type='number' id='offset_6' placeholder='offset6' value='0.0'>
+            <input type='number' id='offset_6' placeholder='offset6' value='0'>
         </div>
     </div>
-
+    
     <div class="accel-container hidden">
         <div>
             <button onclick="sendRequest('/setMaxAccel', [
@@ -419,10 +458,10 @@ function toggleOffsets() {
         </div>
         <div class="accel-grid">
             <label>Translational</label>
-            <input type='number' id='max_trans_accel' placeholder='translational' value='50.0'>
+            <input type='number' id='max_trans_accel' placeholder='translational' value='1000'>
             
             <label>Rotational</label>
-            <input type='number' id='max_angular_accel' placeholder='rotational' value='50.0'>
+            <input type='number' id='max_angular_accel' placeholder='rotational' value='1000'>
         </div>
     </div>
 
@@ -438,12 +477,12 @@ function toggleOffsets() {
                 <div></div>
             </div>
             <div class="grid-row">
-                <input type="number" class="pose-input" id="pose1_x" value="0.0">
-                <input type="number" class="pose-input" id="pose1_y" value="0.0">
-                <input type="number" class="pose-input" id="pose1_z" value="0.0">
-                <input type="number" class="pose-input" id="pose1_roll" value="0.0">
-                <input type="number" class="pose-input" id="pose1_pitch" value="0.0">
-                <input type="number" class="pose-input" id="pose1_yaw" value="0.0">
+                <input type="number" class="pose-input" id="pose1_x" value="0">
+                <input type="number" class="pose-input" id="pose1_y" value="0">
+                <input type="number" class="pose-input" id="pose1_z" value="70">
+                <input type="number" class="pose-input" id="pose1_roll" value="0">
+                <input type="number" class="pose-input" id="pose1_pitch" value="0">
+                <input type="number" class="pose-input" id="pose1_yaw" value="0">
                 <button onclick="sendRequest('/pose1', [
                     document.getElementById('pose1_x'),
                     document.getElementById('pose1_y'),
@@ -454,12 +493,12 @@ function toggleOffsets() {
                 ])">Set</button>
             </div>
             <div class="grid-row">
-                <input type="number" class="pose-input" id="pose2_x" value="0.0">
-                <input type="number" class="pose-input" id="pose2_y" value="0.0">
-                <input type="number" class="pose-input" id="pose2_z" value="0.0">
-                <input type="number" class="pose-input" id="pose2_roll" value="0.0">
-                <input type="number" class="pose-input" id="pose2_pitch" value="0.0">
-                <input type="number" class="pose-input" id="pose2_yaw" value="0.0">
+                <input type="number" class="pose-input" id="pose2_x" value="0">
+                <input type="number" class="pose-input" id="pose2_y" value="0">
+                <input type="number" class="pose-input" id="pose2_z" value="100">
+                <input type="number" class="pose-input" id="pose2_roll" value="0">
+                <input type="number" class="pose-input" id="pose2_pitch" value="0">
+                <input type="number" class="pose-input" id="pose2_yaw" value="0">
                 <button onclick="sendRequest('/pose1', [
                     document.getElementById('pose2_x'),
                     document.getElementById('pose2_y'),
@@ -470,12 +509,12 @@ function toggleOffsets() {
                 ])">Set</button>
             </div>
             <div class="grid-row">
-                <input type="number" class="pose-input" id="pose3_x" value="0.0">
-                <input type="number" class="pose-input" id="pose3_y" value="0.0">
-                <input type="number" class="pose-input" id="pose3_z" value="0.0">
-                <input type="number" class="pose-input" id="pose3_roll" value="0.0">
-                <input type="number" class="pose-input" id="pose3_pitch" value="0.0">
-                <input type="number" class="pose-input" id="pose3_yaw" value="0.0">
+                <input type="number" class="pose-input" id="pose3_x" value="0">
+                <input type="number" class="pose-input" id="pose3_y" value="0">
+                <input type="number" class="pose-input" id="pose3_z" value="140">
+                <input type="number" class="pose-input" id="pose3_roll" value="0">
+                <input type="number" class="pose-input" id="pose3_pitch" value="0">
+                <input type="number" class="pose-input" id="pose3_yaw" value="0">
                 <button onclick="sendRequest('/pose1', [
                     document.getElementById('pose3_x'),
                     document.getElementById('pose3_y'),
@@ -486,12 +525,12 @@ function toggleOffsets() {
                 ])">Set</button>
             </div>
             <div class="grid-row">
-                <input type="number" class="pose-input" id="pose4_x" value="0.0">
-                <input type="number" class="pose-input" id="pose4_y" value="0.0">
-                <input type="number" class="pose-input" id="pose4_z" value="0.0">
-                <input type="number" class="pose-input" id="pose4_roll" value="0.0">
-                <input type="number" class="pose-input" id="pose4_pitch" value="0.0">
-                <input type="number" class="pose-input" id="pose4_yaw" value="0.0">
+                <input type="number" class="pose-input" id="pose4_x" value="30">
+                <input type="number" class="pose-input" id="pose4_y" value="0">
+                <input type="number" class="pose-input" id="pose4_z" value="100">
+                <input type="number" class="pose-input" id="pose4_roll" value="0">
+                <input type="number" class="pose-input" id="pose4_pitch" value="10">
+                <input type="number" class="pose-input" id="pose4_yaw" value="0">
                 <button onclick="sendRequest('/pose1', [
                     document.getElementById('pose4_x'),
                     document.getElementById('pose4_y'),
