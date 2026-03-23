@@ -1,9 +1,11 @@
 #include "inverse_kinematics.h"
 #include "controller.h"
-
 #include <ESP32Servo.h>
-// removed ESPmDNS, WiFiClient, WiFiAP, WiFiServer includes because comms moved
-#include "communication.h"   // new communication module (wifiSetup, wifiRun, onHttpCommand)
+#include "communication.h"   
+
+// change these to fix mechanical offsets in the arms
+vector<float> servoOffsets = {-5, 10, 5, 0, 0, 10};  
+float deadzone = 100;
 
 #define LED_BUILTIN 48   
 
@@ -14,7 +16,6 @@ const char *password = "stewy123";
 // Servo setup
 Servo servos[6];
 int servoPins[6] = {3,2,1,18,17,10};
-vector<float> servoOffsets = {3,1,12,11,3, -2};  // change these to fix mechanical offsets in the arms
 
 // Create IK solver instance
 IKSolver ikSolver(
@@ -123,7 +124,7 @@ void httpCommandHandler(const String& path, const String& params) {
       Serial.println("Invalid startWalk params");
     }
 
-}else if (path == "/setMaxAccel") {
+  }else if (path == "/setMaxAccel") {
     // Example params: "transAccel,rotAccel"
     int commaIndex = params.indexOf(',');
     if (commaIndex != -1) {
@@ -152,6 +153,7 @@ void udpPacketHandler(const JoystickPacket& pkt) {
 
     controller.updateSensorState(pkt.distance, pkt.joyX, pkt.joyY, pkt.clicked);
 }
+
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -202,6 +204,8 @@ while(zMax - zMin > 0.1) {
 }
 
 // start the controller
+controller.setOffsets(servoOffsets);
+controller.setDeadzone(deadzone);
 controller.begin(homePose);
 }
 

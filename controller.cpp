@@ -15,6 +15,7 @@ Controller::Controller(int servoPins[6], IKSolver ikSolver, float maxAcceleratio
     , _currentMode(STANDARD)
     , _inVelocityMode(false)
     , _lastSensorTime(millis())
+    , _deadzone(50)
 {
     // Initialize ESP32 PWM
     ESP32PWM::allocateTimer(0);
@@ -94,14 +95,13 @@ void Controller::updateSensorState(float raw_distance, float raw_joyX, float raw
     _distance = raw_distance;
 
     // recenter joystick values and apply deadzone
-    float xCenter = 2160;
+    float xCenter = 2200;
     float yCenter = 2200;
-    float deadzone = 25;
 
     _joyX = raw_joyX - xCenter;
-    if (abs(_joyX) < deadzone) _joyX = 0;
+    if (abs(_joyX) < _deadzone) _joyX = 0;
     _joyY = raw_joyY - yCenter;
-    if (abs(_joyY) < deadzone) _joyY = 0;
+    if (abs(_joyY) < _deadzone) _joyY = 0;
 
     // Shared dt computation for sensor integrations
     unsigned long now = millis();
@@ -422,6 +422,12 @@ void Controller::setAngles(const vector<float>& angles) {
 
     publishToServos(angles);
 }
+
+void Controller::setDeadzone(float deadzone) {
+    _deadzone = deadzone;
+    Serial.println("Joystick deadzone set to: " + String(deadzone));
+}
+
 
 void Controller::setAccelerationLimits(float maxAcceleration, float maxAngularAcceleration) {
     _maxAcceleration = maxAcceleration;

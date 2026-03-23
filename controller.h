@@ -49,6 +49,7 @@ private:
     bool _prevJoyClick;
     float _collisionOffsetMagnitude = 0.0f;
     Pose _collisionOffsets;
+    float _deadzone;
 
     WalkingPattern1 _walkingPattern;
     float _walkingStartTime;
@@ -59,7 +60,6 @@ private:
     // top plate poses
     Pose _currentPose;
     Pose _goalPose;
-
     Pose _goalVelocity;
 
     // Velocity mode state
@@ -93,6 +93,7 @@ public:
     void setOffsets(vector<float> offsets);
     void setAngleLimits(float min, float max);
     void setAngles(const vector<float>& angles);
+    void setDeadzone(float deadzone);
     void update();
     vector<float> getServoAngles();
     String getModeString();
