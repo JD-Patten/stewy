@@ -188,7 +188,13 @@ html, body {
     padding-right: 0px;
     padding-left: 20px;
 }
-
+.angles-grid {
+    display: grid;
+    grid-template-columns: auto 100px;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
 
 .offsets-grid {
     display: grid;

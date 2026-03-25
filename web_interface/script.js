@@ -5,7 +5,7 @@ function sendRequest(command, inputs) {
 
 function toggleOffsets() {
     // Get all containers
-    const settingsContainers = document.querySelectorAll('.offsets-container, .accel-container');
+    const settingsContainers = document.querySelectorAll('.offsets-container, .angles-container, .accel-container');
     const controlContainers = document.querySelectorAll('.walking-container, .pose-container');
     const poseGridContainer = document.querySelector('.pose-grid-container');
     

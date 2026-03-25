@@ -12,9 +12,9 @@ import re
 import uuid
 
 # === File names ===
-HTML_FILE = "index.html"
-CSS_FILE = "styles.css"
-JS_FILE = "script.js"
+HTML_FILE = "web_interface\index.html"
+CSS_FILE = "web_interface\styles.css"
+JS_FILE = "web_interface\script.js"
 OUTPUT_FILE = "user_interface.h"
 VAR_NAME = "USER_INTERFACE_HTML"
 
